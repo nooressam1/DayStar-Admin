@@ -2,8 +2,12 @@
 
 import React from "react";
 import Link from "next/link";
-import { ProductCard, ProductItem } from "@/components/ProductCard";
-import { BulkEditForm, BulkEditFormData } from "@/components/BulkEditForm";
+import {
+  ProductCard,
+  ProductItem,
+  BulkEditForm,
+  BulkEditFormData,
+} from "@/modules/shared";
 
 const defaultSelectedProducts: ProductItem[] = [
   {

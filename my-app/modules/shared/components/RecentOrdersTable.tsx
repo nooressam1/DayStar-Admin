@@ -5,7 +5,7 @@ import Link from "next/link";
 
 export type OrderStatus = "SHIPPED" | "PROCESSING" | "PENDING" | "CANCELLED" | "DELIVERED";
 
-export interface OrderItem {
+export interface RecentOrderItem {
   id: string;
   customerName: string;
   customerInitials?: string;
@@ -16,11 +16,11 @@ export interface OrderItem {
 export interface RecentOrdersTableProps {
   title?: string;
   viewAllHref?: string;
-  orders?: OrderItem[];
+  orders?: RecentOrderItem[];
   className?: string;
 }
 
-const defaultOrders: OrderItem[] = [
+const defaultOrders: RecentOrderItem[] = [
   {
     id: "#ORD-88210",
     customerName: "Jane Doe",

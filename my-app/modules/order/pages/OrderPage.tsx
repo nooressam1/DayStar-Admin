@@ -1,15 +1,17 @@
 "use client";
 
 import React, { useState } from "react";
-import { OrderFilterBar } from "@/components/OrderFilterBar";
-import { Pagination } from "@/components/Pagination";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { PageHeader, OrderFilterBar, Pagination } from "@/modules/shared";
+import { Order } from "@/types";
 
-export interface OrderRecord {
+export interface OrderRecord extends Partial<Order> {
   id: string;
   customerName: string;
   customerInitials: string;
   date: string;
-  status: "SHIPPED" | "PROCESSING" | "PENDING" | "DELIVERED" | "CANCELLED";
+  status: any;
   paymentStatus: "Paid" | "Pending" | "Refunded" | "Failed";
   amount: string;
 }
@@ -72,6 +74,7 @@ const sampleOrders: OrderRecord[] = [
 ];
 
 export function OrderPage() {
+  const router = useRouter();
   const [statusFilter, setStatusFilter] = useState("All Statuses");
   const [dateFilter, setDateFilter] = useState("");
   const [paymentFilter, setPaymentFilter] = useState("Payment: All");
@@ -120,13 +123,10 @@ export function OrderPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Page Header */}
-      <div>
-        <h1 className="text-2xl font-bold font-serif text-[#6E4B42]">Orders Management</h1>
-        <p className="text-sm text-[#8A756C] mt-1">
-          Monitor customer transactions, order status, and payment history.
-        </p>
-      </div>
+      <PageHeader
+        title="Orders Management"
+        subtitle="Monitor customer transactions, order status, and payment history."
+      />
 
       {/* Filter Bar Component */}
       <OrderFilterBar
@@ -168,39 +168,52 @@ export function OrderPage() {
             </thead>
             <tbody className="divide-y divide-[#F0E8E3]">
               {filteredOrders.length > 0 ? (
-                filteredOrders.map((order) => (
-                  <tr key={order.id} className="hover:bg-[#FAF6F4] transition-colors">
-                    <td className="px-6 py-4 text-sm font-medium text-[#3D2E28] whitespace-nowrap">
-                      {order.id}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-[#3D2E28] whitespace-nowrap">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-[#E4EBF9] text-[#30457A] font-bold text-xs flex items-center justify-center shrink-0">
-                          {order.customerInitials}
+                filteredOrders.map((order) => {
+                  const cleanId = order.id.replace("#", "");
+                  return (
+                    <tr
+                      key={order.id}
+                      onClick={() => router.push(`/order/${cleanId}`)}
+                      className="hover:bg-[#FAF6F4] transition-colors cursor-pointer"
+                    >
+                      <td className="px-6 py-4 text-sm font-medium text-[#3D2E28] whitespace-nowrap">
+                        <Link
+                          href={`/order/${cleanId}`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="text-[#6E4B42] font-semibold hover:underline"
+                        >
+                          {order.id}
+                        </Link>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-[#3D2E28] whitespace-nowrap">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-[#E4EBF9] text-[#30457A] font-bold text-xs flex items-center justify-center shrink-0">
+                            {order.customerInitials}
+                          </div>
+                          <span className="font-medium">{order.customerName}</span>
                         </div>
-                        <span className="font-medium">{order.customerName}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-[#8A756C] whitespace-nowrap">
-                      {order.date}
-                    </td>
-                    <td className="px-6 py-4 text-sm font-medium text-[#4A3831] whitespace-nowrap">
-                      {order.paymentStatus}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`inline-block text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-wider ${getStatusBadge(
-                          order.status
-                        )}`}
-                      >
-                        {order.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-sm font-semibold text-[#3D2E28] whitespace-nowrap">
-                      {order.amount}
-                    </td>
-                  </tr>
-                ))
+                      </td>
+                      <td className="px-6 py-4 text-sm text-[#8A756C] whitespace-nowrap">
+                        {order.date}
+                      </td>
+                      <td className="px-6 py-4 text-sm font-medium text-[#4A3831] whitespace-nowrap">
+                        {order.paymentStatus}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span
+                          className={`inline-block text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-wider ${getStatusBadge(
+                            order.status
+                          )}`}
+                        >
+                          {order.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-sm font-semibold text-[#3D2E28] whitespace-nowrap">
+                        {order.amount}
+                      </td>
+                    </tr>
+                  );
+                })
               ) : (
                 <tr>
                   <td colSpan={6} className="px-6 py-12 text-center text-sm text-[#8A756C]">

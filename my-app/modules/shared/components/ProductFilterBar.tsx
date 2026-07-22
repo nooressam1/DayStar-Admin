@@ -61,11 +61,10 @@ export function ProductFilterBar({
             {/* Grid View Button */}
             <button
               onClick={() => handleViewChange("grid")}
-              className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
-                currentView === "grid"
+              className={`p-1.5 rounded-lg transition-colors cursor-pointer ${currentView === "grid"
                   ? "bg-[#F0E6DF] text-[#6E4B42]"
                   : "text-[#8A756C] hover:text-[#6E4B42] hover:bg-[#F9F5F2]"
-              }`}
+                }`}
               title="Grid View"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -81,11 +80,10 @@ export function ProductFilterBar({
             {/* List View Button */}
             <button
               onClick={() => handleViewChange("list")}
-              className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
-                currentView === "list"
+              className={`p-1.5 rounded-lg transition-colors cursor-pointer ${currentView === "list"
                   ? "bg-[#F0E6DF] text-[#6E4B42]"
                   : "text-[#8A756C] hover:text-[#6E4B42] hover:bg-[#F9F5F2]"
-              }`}
+                }`}
               title="List View"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

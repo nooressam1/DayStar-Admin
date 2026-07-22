@@ -2,8 +2,13 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ProductFilterBar, ViewMode } from "@/components/ProductFilterBar";
-import { ProductCard, ProductItem } from "@/components/ProductCard";
+import {
+  PageHeader,
+  ProductFilterBar,
+  ViewMode,
+  ProductCard,
+  ProductItem,
+} from "@/modules/shared";
 
 const sampleProducts: ProductItem[] = [
   {
@@ -123,13 +128,10 @@ export function ProductPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Page Header Text */}
-      <div>
-        <h1 className="text-2xl font-bold font-serif text-[#6E4B42]">Product Catalog</h1>
-        <p className="text-sm text-[#8A756C] mt-1">
-          Manage products, categories, and catalog listings.
-        </p>
-      </div>
+      <PageHeader
+        title="Product Catalog"
+        subtitle="Manage products, categories, and catalog listings."
+      />
 
       {/* Product Filter & Action Bar Component */}
       <ProductFilterBar
@@ -148,7 +150,7 @@ export function ProductPage() {
         onDeselectProduct={handleTurnOffSelect}
         onEditProducts={handleEditSelected}
         onExportProduct={handleExportProducts}
-        onAddProduct={() => alert("Add Product clicked")}
+        onAddProduct={() => router.push("/product/new")}
       />
 
       {/* Select Mode Active Status Banner */}
