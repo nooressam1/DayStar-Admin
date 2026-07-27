@@ -24,6 +24,8 @@ export interface Variant {
   sku: string;
 }
 
+export type ProductVariant = Omit<Variant, "product_id">;
+
 export interface Review {
   id: string;
   product_id: string;

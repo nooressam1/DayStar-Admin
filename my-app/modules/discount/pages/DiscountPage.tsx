@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { PageHeader, Pagination, Button, Modal } from "@/modules/shared";
+import { PageHeader, Pagination, Button, Modal, Filter, FilterConfig, Table, ColumnConfig } from "@/modules/shared";
 import { Discount } from "@/types";
 
 export interface DiscountRecord extends Partial<Discount> {
@@ -95,7 +95,8 @@ const initialDiscounts: DiscountRecord[] = [
 
 export function DiscountPage() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<"All" | "Active" | "Scheduled" | "Expired">("All");
+  const [statusFilter, setStatusFilter] = useState("All Statuses");
+  const [typeFilter, setTypeFilter] = useState("All Types");
   const [discounts, setDiscounts] = useState<DiscountRecord[]>(initialDiscounts);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -128,7 +129,10 @@ export function DiscountPage() {
   const [minQuantity, setMinQuantity] = useState("");
 
   const filteredDiscounts = discounts.filter((d) => {
-    if (activeTab !== "All" && d.status !== activeTab) {
+    if (statusFilter !== "All Statuses" && d.status !== statusFilter) {
+      return false;
+    }
+    if (typeFilter !== "All Types" && d.type !== typeFilter) {
       return false;
     }
     if (
@@ -266,6 +270,158 @@ export function DiscountPage() {
     }
   };
 
+  const discountConfig: FilterConfig[] = [
+    {
+      key: "status",
+      type: "select",
+      value: statusFilter,
+      onChange: (val) => {
+        setStatusFilter(val);
+        setCurrentPage(1);
+      },
+      options: [
+        { label: "All Statuses", value: "All Statuses" },
+        { label: "Active", value: "Active" },
+        { label: "Scheduled", value: "Scheduled" },
+        { label: "Expired", value: "Expired" },
+      ],
+    },
+    {
+      key: "type",
+      type: "select",
+      value: typeFilter,
+      onChange: (val) => {
+        setTypeFilter(val);
+        setCurrentPage(1);
+      },
+      options: [
+        { label: "All Types", value: "All Types" },
+        { label: "Percentage", value: "Percentage" },
+        { label: "Fixed Amount", value: "Fixed Amount" },
+        { label: "Free Shipping", value: "Free Shipping" },
+      ],
+    },
+    {
+      key: "search",
+      type: "search",
+      value: searchQuery,
+      onChange: (val) => {
+        setSearchQuery(val);
+        setCurrentPage(1);
+      },
+      placeholder: "Search discount code or campaign...",
+    },
+  ];
+
+  const discountColumns: ColumnConfig<DiscountRecord>[] = [
+    {
+      key: "code",
+      header: "DISCOUNT CODE",
+      accessor: (discount) => (
+        <div className="flex items-center gap-2">
+          <span className="font-mono text-xs font-bold px-2.5 py-1 rounded-md bg-[#FAF5F2] border border-[#E9E3DE] text-[#583F37]">
+            {discount.code}
+          </span>
+          <button
+            onClick={() => handleCopyCode(discount.code)}
+            title="Copy Discount Code"
+            className="text-[#8A756C] hover:text-[#583F37] p-1 rounded-md hover:bg-stone-100 transition-colors cursor-pointer"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.8}
+                d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+              />
+            </svg>
+          </button>
+        </div>
+      ),
+    },
+    {
+      key: "title",
+      header: "CAMPAIGN TITLE",
+      accessor: "title",
+      className: "font-semibold text-[#3D2E28]",
+    },
+    {
+      key: "value",
+      header: "VALUE",
+      accessor: "value",
+      className: "font-medium text-[#583F37]",
+    },
+    {
+      key: "status",
+      header: "STATUS",
+      accessor: (discount) => (
+        <span
+          className={`inline-block text-xs font-semibold px-3 py-1 rounded-full ${getStatusBadge(
+            discount.status
+          )}`}
+        >
+          {discount.status}
+        </span>
+      ),
+    },
+    {
+      key: "usage",
+      header: "USAGE",
+      accessor: (discount) => (
+        <span className="text-[#6E5B53]">
+          {discount.usageCount} {discount.usageLimit ? `/ ${discount.usageLimit}` : "used"}
+        </span>
+      ),
+    },
+    {
+      key: "dates",
+      header: "START & END DATE",
+      accessor: (discount) => (
+        <span className="text-xs text-[#8A756C]">
+          {discount.startDate} {discount.endDate ? `to ${discount.endDate}` : ""}
+        </span>
+      ),
+    },
+    {
+      key: "actions",
+      header: "ACTIONS",
+      align: "right",
+      accessor: (discount) => (
+        <div className="flex items-center justify-end gap-1.5">
+          <button
+            onClick={() => handleOpenEdit(discount)}
+            title="Edit Discount"
+            className="p-1.5 rounded-lg text-[#583F37] hover:bg-[#FAF5F2] border border-transparent hover:border-[#E9E3DE] transition-colors cursor-pointer"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.8}
+                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+              />
+            </svg>
+          </button>
+
+          <button
+            onClick={() => setDeletingId(discount.id)}
+            title="Delete Discount"
+            className="p-1.5 rounded-lg text-red-600 hover:bg-red-50 border border-transparent hover:border-red-200 transition-colors cursor-pointer"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.8}
+                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+              />
+            </svg>
+          </button>
+        </div>
+      ),
+    },
+  ];
+
   return (
     <div className="flex flex-col gap-6 pb-12">
       {/* Toast Feedback for Copying */}
@@ -283,192 +439,28 @@ export function DiscountPage() {
         subtitle="Welcome back. Here's what's happening with your store today."
       />
 
-      {/* Filter Tabs & Create Action Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        {/* Left: Tab Segmented Control */}
-        <div className="inline-flex bg-white rounded-xl border border-[#E9E3DE] p-1 shadow-xs">
-          {(["All", "Active", "Scheduled", "Expired"] as const).map((tab) => (
-            <button
-              key={tab}
-              onClick={() => {
-                setActiveTab(tab);
-                setCurrentPage(1);
-              }}
-              className={`px-4 py-1.5 text-sm font-medium rounded-lg transition-colors cursor-pointer ${activeTab === tab
-                ? "bg-[#FAF5F2] text-[#3D2E28] font-semibold shadow-2xs"
-                : "text-[#7A6860] hover:text-[#3D2E28]"
-                }`}
-            >
-              {tab}
-            </button>
-          ))}
-        </div>
+      {/* Universal Reusable Filter Component */}
+      <Filter
+        config={discountConfig}
+        actions={
+          <button
+            onClick={() => router.push("/discount/new")}
+            className="bg-[#004956] text-white hover:bg-[#003842] text-sm font-semibold px-4 py-2 rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs shrink-0"
+          >
+            <span className="text-base font-normal leading-none">+</span>
+            <span>Create Discount</span>
+          </button>
+        }
+      />
 
-        <Button
-          onClick={() => router.push("/discount/new")}
-          icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v6m3-3H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
-        >
-          Create Discount
-        </Button>
-      </div>
-
-      {/* Search & Discounts Table Container */}
-      <div className="bg-white rounded-2xl border border-[#E9E3DE] shadow-xs overflow-hidden">
-        {/* Search Header */}
-        <div className="p-4 border-b border-[#E9E3DE] bg-[#FAF6F4]/50 flex items-center gap-3">
-          <svg className="w-5 h-5 text-[#8A756C]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={1.8}
-              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-            />
-          </svg>
-          <input
-            type="text"
-            placeholder="Search discount code or campaign title..."
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              setCurrentPage(1);
-            }}
-            className="w-full text-sm bg-transparent outline-hidden text-[#3D2E28] placeholder-[#8A756C]"
-          />
-        </div>
-
-        {/* Table */}
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-[#FAF6F4] border-b border-[#E9E3DE]">
-                <th className="px-6 py-3.5 text-xs font-bold text-[#7A6860] uppercase tracking-wider">
-                  DISCOUNT CODE
-                </th>
-                <th className="px-6 py-3.5 text-xs font-bold text-[#7A6860] uppercase tracking-wider">
-                  CAMPAIGN TITLE
-                </th>
-                <th className="px-6 py-3.5 text-xs font-bold text-[#7A6860] uppercase tracking-wider">
-                  VALUE
-                </th>
-                <th className="px-6 py-3.5 text-xs font-bold text-[#7A6860] uppercase tracking-wider">
-                  STATUS
-                </th>
-                <th className="px-6 py-3.5 text-xs font-bold text-[#7A6860] uppercase tracking-wider">
-                  USAGE
-                </th>
-                <th className="px-6 py-3.5 text-xs font-bold text-[#7A6860] uppercase tracking-wider">
-                  START & END DATE
-                </th>
-                <th className="px-6 py-3.5 text-xs font-bold text-[#7A6860] uppercase tracking-wider text-right">
-                  ACTIONS
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#F0E8E3]">
-              {paginatedDiscounts.length > 0 ? (
-                paginatedDiscounts.map((discount) => (
-                  <tr key={discount.id} className="hover:bg-[#FAF6F4]/50 transition-colors">
-                    {/* Code */}
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-xs font-bold px-2.5 py-1 rounded-md bg-[#FAF5F2] border border-[#E9E3DE] text-[#583F37]">
-                          {discount.code}
-                        </span>
-                        <button
-                          onClick={() => handleCopyCode(discount.code)}
-                          title="Copy Discount Code"
-                          className="text-[#8A756C] hover:text-[#583F37] p-1 rounded-md hover:bg-stone-100 transition-colors cursor-pointer"
-                        >
-                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={1.8}
-                              d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-                            />
-                          </svg>
-                        </button>
-                      </div>
-                    </td>
-
-                    {/* Title */}
-                    <td className="px-6 py-4 text-sm font-semibold text-[#3D2E28] whitespace-nowrap">
-                      {discount.title}
-                    </td>
-
-                    {/* Value */}
-                    <td className="px-6 py-4 text-sm font-medium text-[#583F37] whitespace-nowrap">
-                      {discount.value}
-                    </td>
-
-                    {/* Status */}
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`inline-block text-xs font-semibold px-3 py-1 rounded-full ${getStatusBadge(
-                          discount.status
-                        )}`}
-                      >
-                        {discount.status}
-                      </span>
-                    </td>
-
-                    {/* Usage */}
-                    <td className="px-6 py-4 text-sm text-[#6E5B53] whitespace-nowrap">
-                      {discount.usageCount}{" "}
-                      {discount.usageLimit ? `/ ${discount.usageLimit}` : "used"}
-                    </td>
-
-                    {/* Dates */}
-                    <td className="px-6 py-4 text-xs text-[#8A756C] whitespace-nowrap">
-                      {discount.startDate} {discount.endDate ? `to ${discount.endDate}` : ""}
-                    </td>
-
-                    {/* Actions Column */}
-                    <td className="px-6 py-4 whitespace-nowrap text-right">
-                      <div className="flex items-center justify-end gap-1.5">
-                        <button
-                          onClick={() => handleOpenEdit(discount)}
-                          title="Edit Discount"
-                          className="p-1.5 rounded-lg text-[#583F37] hover:bg-[#FAF5F2] border border-transparent hover:border-[#E9E3DE] transition-colors cursor-pointer"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={1.8}
-                              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                            />
-                          </svg>
-                        </button>
-
-                        <button
-                          onClick={() => setDeletingId(discount.id)}
-                          title="Delete Discount"
-                          className="p-1.5 rounded-lg text-red-600 hover:bg-red-50 border border-transparent hover:border-red-200 transition-colors cursor-pointer"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={1.8}
-                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                            />
-                          </svg>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-sm text-[#8A756C]">
-                    No discounts found matching your criteria.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+      {/* Declarative Table Component with Column Config */}
+      <div className="space-y-0">
+        <Table
+          data={paginatedDiscounts}
+          columns={discountColumns}
+          keyExtractor={(discount) => discount.id}
+          emptyText="No discounts found matching your criteria."
+        />
 
         {/* Pagination Component */}
         <Pagination

@@ -1,4 +1,17 @@
 export * from "./pages/ProductPage";
 export * from "./pages/BulkEditProductsPage";
 export * from "./pages/AddProductPage";
-export { AddProductModal } from "./components/AddProductModal";
+export { GeneralInformationCard } from "./components/GeneralInformationCard";
+export type { GeneralInformationCardProps } from "./components/GeneralInformationCard";
+export { SkincareQuizCard } from "./components/SkincareQuizCard";
+export type { SkincareQuizCardProps } from "./components/SkincareQuizCard";
+export { ProductStatusCard } from "./components/ProductStatusCard";
+export type { ProductStatusCardProps } from "./components/ProductStatusCard";
+export { PromotionalSaleCard } from "./components/PromotionalSaleCard";
+export type { PromotionalSaleCardProps } from "./components/PromotionalSaleCard";
+export { ProductVariantsCard } from "./components/ProductVariantsCard";
+export type { ProductVariantsCardProps } from "./components/ProductVariantsCard";
+export { InventoryCard } from "./components/InventoryCard";
+export type { InventoryCardProps } from "./components/InventoryCard";
+export { OrganizationCard } from "./components/OrganizationCard";
+export type { OrganizationCardProps } from "./components/OrganizationCard";

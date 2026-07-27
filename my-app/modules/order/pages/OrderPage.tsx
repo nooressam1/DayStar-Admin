@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { PageHeader, OrderFilterBar, Pagination } from "@/modules/shared";
+import { PageHeader, Filter, FilterConfig, Table, ColumnConfig, Pagination } from "@/modules/shared";
 import { Order } from "@/types";
 
 export interface OrderRecord extends Partial<Order> {
@@ -121,6 +121,111 @@ export function OrderPage() {
     }
   };
 
+  const orderConfig: FilterConfig[] = [
+    {
+      key: "status",
+      type: "select",
+      value: statusFilter,
+      onChange: setStatusFilter,
+      options: [
+        { label: "All Statuses", value: "All Statuses" },
+        { label: "Shipped", value: "SHIPPED" },
+        { label: "Processing", value: "PROCESSING" },
+        { label: "Pending", value: "PENDING" },
+        { label: "Delivered", value: "DELIVERED" },
+        { label: "Cancelled", value: "CANCELLED" },
+      ],
+    },
+    {
+      key: "date",
+      type: "date",
+      value: dateFilter,
+      onChange: setDateFilter,
+    },
+    {
+      key: "payment",
+      type: "select",
+      value: paymentFilter,
+      onChange: setPaymentFilter,
+      options: [
+        { label: "Payment: All", value: "Payment: All" },
+        { label: "Paid", value: "Paid" },
+        { label: "Pending", value: "Pending" },
+        { label: "Refunded", value: "Refunded" },
+        { label: "Failed", value: "Failed" },
+      ],
+    },
+    {
+      key: "search",
+      type: "search",
+      value: searchQuery,
+      onChange: setSearchQuery,
+      placeholder: "Search orders...",
+    },
+  ];
+
+  const orderColumns: ColumnConfig<OrderRecord>[] = [
+    {
+      key: "id",
+      header: "Order ID",
+      accessor: (order) => {
+        const cleanId = order.id.replace("#", "");
+        return (
+          <Link
+            href={`/order/${cleanId}`}
+            onClick={(e) => e.stopPropagation()}
+            className="text-[#6E4B42] font-semibold hover:underline"
+          >
+            {order.id}
+          </Link>
+        );
+      },
+    },
+    {
+      key: "customerName",
+      header: "Customer",
+      accessor: (order) => (
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full bg-[#E4EBF9] text-[#30457A] font-bold text-xs flex items-center justify-center shrink-0">
+            {order.customerInitials}
+          </div>
+          <span className="font-medium">{order.customerName}</span>
+        </div>
+      ),
+    },
+    {
+      key: "date",
+      header: "Date",
+      accessor: "date",
+      className: "text-[#8A756C]",
+    },
+    {
+      key: "paymentStatus",
+      header: "Payment",
+      accessor: "paymentStatus",
+      className: "font-medium text-[#4A3831]",
+    },
+    {
+      key: "status",
+      header: "Status",
+      accessor: (order) => (
+        <span
+          className={`inline-block text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-wider ${getStatusBadge(
+            order.status
+          )}`}
+        >
+          {order.status}
+        </span>
+      ),
+    },
+    {
+      key: "amount",
+      header: "Amount",
+      accessor: "amount",
+      className: "font-semibold text-[#3D2E28]",
+    },
+  ];
+
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
@@ -128,102 +233,18 @@ export function OrderPage() {
         subtitle="Monitor customer transactions, order status, and payment history."
       />
 
-      {/* Filter Bar Component */}
-      <OrderFilterBar
-        status={statusFilter}
-        onStatusChange={setStatusFilter}
-        date={dateFilter}
-        onDateChange={setDateFilter}
-        payment={paymentFilter}
-        onPaymentChange={setPaymentFilter}
-        search={searchQuery}
-        onSearchChange={setSearchQuery}
-      />
+      {/* Universal Reusable Filter Component */}
+      <Filter config={orderConfig} />
 
-      {/* Orders Table Container */}
-      <div className="bg-white rounded-2xl border border-[#E9E3DE] shadow-xs overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-[#FAF5F2] border-b border-[#E9E3DE]">
-                <th className="px-6 py-3.5 text-xs font-bold text-[#6E5B53] uppercase tracking-wider">
-                  Order ID
-                </th>
-                <th className="px-6 py-3.5 text-xs font-bold text-[#6E5B53] uppercase tracking-wider">
-                  Customer
-                </th>
-                <th className="px-6 py-3.5 text-xs font-bold text-[#6E5B53] uppercase tracking-wider">
-                  Date
-                </th>
-                <th className="px-6 py-3.5 text-xs font-bold text-[#6E5B53] uppercase tracking-wider">
-                  Payment
-                </th>
-                <th className="px-6 py-3.5 text-xs font-bold text-[#6E5B53] uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3.5 text-xs font-bold text-[#6E5B53] uppercase tracking-wider">
-                  Amount
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#F0E8E3]">
-              {filteredOrders.length > 0 ? (
-                filteredOrders.map((order) => {
-                  const cleanId = order.id.replace("#", "");
-                  return (
-                    <tr
-                      key={order.id}
-                      onClick={() => router.push(`/order/${cleanId}`)}
-                      className="hover:bg-[#FAF6F4] transition-colors cursor-pointer"
-                    >
-                      <td className="px-6 py-4 text-sm font-medium text-[#3D2E28] whitespace-nowrap">
-                        <Link
-                          href={`/order/${cleanId}`}
-                          onClick={(e) => e.stopPropagation()}
-                          className="text-[#6E4B42] font-semibold hover:underline"
-                        >
-                          {order.id}
-                        </Link>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-[#3D2E28] whitespace-nowrap">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-[#E4EBF9] text-[#30457A] font-bold text-xs flex items-center justify-center shrink-0">
-                            {order.customerInitials}
-                          </div>
-                          <span className="font-medium">{order.customerName}</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-[#8A756C] whitespace-nowrap">
-                        {order.date}
-                      </td>
-                      <td className="px-6 py-4 text-sm font-medium text-[#4A3831] whitespace-nowrap">
-                        {order.paymentStatus}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span
-                          className={`inline-block text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-wider ${getStatusBadge(
-                            order.status
-                          )}`}
-                        >
-                          {order.status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-sm font-semibold text-[#3D2E28] whitespace-nowrap">
-                        {order.amount}
-                      </td>
-                    </tr>
-                  );
-                })
-              ) : (
-                <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-sm text-[#8A756C]">
-                    No orders match your filter criteria.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+      {/* Declarative Table Component with Column Config */}
+      <div className="space-y-0">
+        <Table
+          data={filteredOrders}
+          columns={orderColumns}
+          keyExtractor={(order) => order.id}
+          onRowClick={(order) => router.push(`/order/${order.id.replace("#", "")}`)}
+          emptyText="No orders match your filter criteria."
+        />
 
         {/* Pagination Component */}
         <Pagination
