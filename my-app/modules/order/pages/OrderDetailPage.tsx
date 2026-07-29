@@ -7,176 +7,137 @@ import { PageHeader, Modal, Button } from "@/modules/shared";
 import { OrderedItemsTable } from "../components/OrderedItemsTable";
 import { OrderPriceSummaryCard } from "../components/OrderPriceSummaryCard";
 import { OrderCustomerDetailsCard } from "../components/OrderCustomerDetailsCard";
-import { Order, OrderItem as DBOrderItem, Address, Profile } from "@/types";
+import { OrderWithDetails, OrderItem, Address, Profile } from "@/types";
 
-export interface OrderItem {
-  id: string;
-  name: string;
-  sku: string;
-  subtitle?: string;
-  price: number;
-  quantity: number;
-  image: string;
-}
-
-export interface OrderDetailData {
-  id: string;
-  placedDate: string;
-  source: string;
-  paymentStatus: "Paid" | "Pending" | "Refunded" | "Failed" | "Unpaid";
-  fulfillmentStatus: "Shipped" | "Processing" | "Delivered" | "Cancelled" | "Pending";
-  paymentMethodText: string;
-  customer: {
-    name: string;
-    email: string;
-    phone: string;
-    avatarInitials: string;
-    totalOrders: number;
-    customerSince?: string;
-  };
-  shippingAddress: {
-    recipient: string;
-    street: string;
-    cityStateZip: string;
-    country: string;
-  };
-  billingAddress: {
-    recipient: string;
-    street: string;
-    cityStateZip: string;
-    country: string;
-  };
-  items: OrderItem[];
-  subtotal: number;
-  discount: number;
-  deliveryFee: number;
-  totalPrice: number;
-}
-
-const sampleItems: OrderItem[] = [
+const sampleDBItems: OrderItem[] = [
   {
     id: "item-1",
-    name: "Apex Pro Keyboard",
-    subtitle: "Switch: OmniPoint 2.0",
+    order_id: "ord-88421",
+    variant_id: "var-101",
+    product_name: "Apex Pro Keyboard",
     sku: "KB-APX-PRO",
-    price: 199.99,
+    unit_price_snapshot: 199.99,
     quantity: 1,
     image: "https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=150&auto=format&fit=crop&q=80",
   },
   {
     id: "item-2",
-    name: "QcK Heavy XL",
-    subtitle: "Size: Extra Large",
+    order_id: "ord-88421",
+    variant_id: "var-102",
+    product_name: "QcK Heavy XL Mousepad",
     sku: "MP-QCK-XL",
-    price: 29.99,
+    unit_price_snapshot: 29.99,
     quantity: 1,
     image: "https://images.unsplash.com/photo-1615663245857-ac93bb7c39e7?w=150&auto=format&fit=crop&q=80",
   },
   {
     id: "item-3",
-    name: "Coiled USB-C Cable",
-    subtitle: "Color: Midnight Black",
+    order_id: "ord-88421",
+    variant_id: "var-103",
+    product_name: "Coiled USB-C Cable",
     sku: "CB-CLD-BLK",
-    price: 35.00,
+    unit_price_snapshot: 35.00,
     quantity: 1,
     image: "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=150&auto=format&fit=crop&q=80",
   },
 ];
 
-const mockOrderDetails: Record<string, OrderDetailData> = {
-  "MH-98421": {
-    id: "#MH-98421",
-    placedDate: "October 24, 2023 at 2:14 PM",
-    source: "Website",
-    paymentStatus: "Paid",
-    fulfillmentStatus: "Shipped",
-    paymentMethodText: "Cash On deliver",
-    customer: {
-      name: "Jane Doe",
-      email: "jane.doe@example.com",
-      phone: "+1 (555) 0123-4567",
-      avatarInitials: "JD",
-      totalOrders: 12,
-      customerSince: "2021",
-    },
-    shippingAddress: {
-      recipient: "Jane Doe",
-      street: "123 Industrial Way, Suite 400",
-      cityStateZip: "San Francisco, CA 94103",
-      country: "United States",
-    },
-    billingAddress: {
-      recipient: "Jane Doe",
-      street: "123 Industrial Way, Suite 400",
-      cityStateZip: "San Francisco, CA 94103",
-      country: "United States",
-    },
-    items: sampleItems,
-    subtotal: 252.00,
-    discount: 23.00,
-    deliveryFee: 54.00,
-    totalPrice: 283.00,
+const sampleAddress: Address = {
+  id: "addr-101",
+  user_id: "usr-201",
+  label: "Office",
+  street: "123 Industrial Way, Suite 400",
+  city: "San Francisco",
+  governorate: "CA",
+  postal_code: "94103",
+  country: "United States",
+  created_at: "2023-01-15T00:00:00Z",
+  is_default: true,
+};
+
+const sampleUser: Profile = {
+  id: "usr-201",
+  username: "janedoe",
+  role: "customer",
+  email: "jane.doe@example.com",
+  full_name: "Jane Doe",
+};
+
+const mockDatabaseOrders: Record<string, OrderWithDetails> = {
+  "ORD-88210": {
+    id: "ord-88421",
+    order_number: 88210,
+    user_id: "usr-201",
+    address_id: "addr-101",
+    status: "Shipped",
+    total: 283.00,
+    created_at: "2023-10-24T14:14:00Z",
+    full_name: "Jane Doe",
+    phone_number: "+1 (555) 0123-4567",
+    subtotal: 264.98,
+    discount: 20.00,
+    delivery_fee: 38.02,
+    payment_method: "Cash on Delivery",
+    items: sampleDBItems,
+    address: sampleAddress,
+    user: sampleUser,
   },
 };
 
-const defaultOrder: OrderDetailData = {
-  id: "#MH-98421",
-  placedDate: "October 24, 2023 at 2:14 PM",
-  source: "Website",
-  paymentStatus: "Paid",
-  fulfillmentStatus: "Shipped",
-  paymentMethodText: "Cash On deliver",
-  customer: {
-    name: "Jane Doe",
-    email: "jane.doe@example.com",
-    phone: "+1 (555) 0123-4567",
-    avatarInitials: "JD",
-    totalOrders: 12,
-    customerSince: "2021",
-  },
-  shippingAddress: {
-    recipient: "Jane Doe",
-    street: "123 Industrial Way, Suite 400",
-    cityStateZip: "San Francisco, CA 94103",
-    country: "United States",
-  },
-  billingAddress: {
-    recipient: "Jane Doe",
-    street: "123 Industrial Way, Suite 400",
-    cityStateZip: "San Francisco, CA 94103",
-    country: "United States",
-  },
-  items: sampleItems,
-  subtotal: 252.00,
-  discount: 23.00,
-  deliveryFee: 54.00,
-  totalPrice: 283.00,
+const defaultDBOrder: OrderWithDetails = {
+  id: "ord-88421",
+  order_number: 98421,
+  user_id: "usr-201",
+  address_id: "addr-101",
+  status: "Shipped",
+  total: 283.00,
+  created_at: "2023-10-24T14:14:00Z",
+  full_name: "Jane Doe",
+  phone_number: "+1 (555) 0123-4567",
+  subtotal: 264.98,
+  discount: 20.00,
+  delivery_fee: 38.02,
+  payment_method: "Cash on Delivery",
+  items: sampleDBItems,
+  address: sampleAddress,
+  user: sampleUser,
 };
 
 export function OrderDetailPage({ orderId: propOrderId }: { orderId?: string }) {
   const params = useParams();
-  const rawId = propOrderId || (params?.id as string) || "MH-98421";
+  const rawId = propOrderId || (params?.id as string) || "ORD-88210";
   const cleanId = rawId.replace("%23", "").replace("#", "");
 
-  const orderData = mockOrderDetails[cleanId] || {
-    ...defaultOrder,
-    id: cleanId.startsWith("ORD-") || cleanId.startsWith("MH-") ? `#${cleanId}` : `#${cleanId.toUpperCase()}`,
+  const orderData: OrderWithDetails = mockDatabaseOrders[cleanId] || {
+    ...defaultDBOrder,
+    id: cleanId,
+    order_number: parseInt(cleanId.replace(/\D/g, ""), 10) || 98421,
   };
 
   const [showRefundModal, setShowRefundModal] = useState(false);
   const [refundReason, setRefundReason] = useState("");
-  const [isRefunded, setIsRefunded] = useState(orderData.paymentStatus === "Refunded");
+  const [currentStatus, setCurrentStatus] = useState<string>(orderData.status || "Shipped");
+
+  const isRefunded = currentStatus === "Cancelled" || currentStatus === "Refunded";
 
   const handlePrintPackingSlip = () => {
     window.print();
   };
 
   const handleConfirmRefund = () => {
-    setIsRefunded(true);
+    setCurrentStatus("Refunded");
     setShowRefundModal(false);
   };
 
-  const totalItemsCount = orderData.items.reduce((sum, item) => sum + item.quantity, 0);
+  const formattedDate = new Date(orderData.created_at).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+  const displayOrderNumber = `#ORD-${orderData.order_number}`;
 
   return (
     <div className="flex flex-col gap-6 pb-12">
@@ -184,23 +145,21 @@ export function OrderDetailPage({ orderId: propOrderId }: { orderId?: string }) 
       <PageHeader
         title={
           <div className="flex items-center flex-wrap gap-3">
-            <span>Order {orderData.id}</span>
+            <span>Order {displayOrderNumber}</span>
             <span
-              className={`px-5 py-1 text-xs sm:text-sm font-medium rounded-full ${isRefunded
-                ? "bg-red-100 text-red-800"
-                : orderData.paymentStatus === "Paid"
+              className={`px-5 py-1 text-xs sm:text-sm font-medium rounded-full ${
+                currentStatus === "Refunded" || currentStatus === "Cancelled"
+                  ? "bg-red-100 text-red-800"
+                  : currentStatus === "Shipped" || currentStatus === "Delivered"
                   ? "bg-[#50E3C2] text-[#044E35]"
                   : "bg-amber-100 text-amber-800"
-                }`}
+              }`}
             >
-              {isRefunded ? "Refunded" : orderData.paymentStatus}
-            </span>
-            <span className="px-3 py-1 text-xs sm:text-sm font-medium rounded-full bg-[#E0E7FF] text-[#3730A3]">
-              {orderData.fulfillmentStatus}
+              {currentStatus}
             </span>
           </div>
         }
-        subtitle={`Placed on ${orderData.placedDate} `}
+        subtitle={`Placed on ${formattedDate}`}
         backLink={{
           href: "/order",
           label: "Back to Orders",
@@ -249,25 +208,28 @@ export function OrderDetailPage({ orderId: propOrderId }: { orderId?: string }) 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         {/* Left Section: Ordered Items Component */}
         <OrderedItemsTable
-          items={orderData.items}
+          items={orderData.items || []}
           className="lg:col-span-2"
         />
 
         {/* Right Section: Price & Payment Summary Component */}
         <OrderPriceSummaryCard
+          total={orderData.total}
           subtotal={orderData.subtotal}
           discount={orderData.discount}
-          deliveryFee={orderData.deliveryFee}
-          paymentMethodText={orderData.paymentMethodText}
-          paymentStatus={orderData.paymentStatus}
+          deliveryFee={orderData.delivery_fee}
+          paymentMethodText={orderData.payment_method}
+          status={currentStatus}
           isRefunded={isRefunded}
         />
       </div>
 
       {/* Bottom Customer Card Component */}
       <OrderCustomerDetailsCard
-        customer={orderData.customer}
-        shippingAddress={orderData.shippingAddress}
+        user={orderData.user}
+        address={orderData.address}
+        fullName={orderData.full_name}
+        phoneNumber={orderData.phone_number}
       />
 
       {/* Refund Confirmation Modal */}
@@ -275,7 +237,7 @@ export function OrderDetailPage({ orderId: propOrderId }: { orderId?: string }) 
         isOpen={showRefundModal}
         onClose={() => setShowRefundModal(false)}
         onConfirm={handleConfirmRefund}
-        title={`Process Refund for ${orderData.id}`}
+        title={`Process Refund for ${displayOrderNumber}`}
         subtitle="Are you sure you want to issue a full refund for this order?"
         confirmText="Confirm Refund"
         confirmVariant="danger"
@@ -297,3 +259,4 @@ export function OrderDetailPage({ orderId: propOrderId }: { orderId?: string }) 
 }
 
 export default OrderDetailPage;
+

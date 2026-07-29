@@ -1,3 +1,6 @@
+import { Profile } from "./profile.type";
+import { Address } from "./address.type";
+
 export interface Order {
   id: string;
   order_number: number;
@@ -18,4 +21,16 @@ export interface OrderItem {
   unit_price_snapshot: number;
   product_name?: string;
   sku?: string;
+  image?: string;
 }
+
+export interface OrderWithDetails extends Order {
+  user?: Profile | null;
+  address?: Address | null;
+  items?: OrderItem[];
+  subtotal?: number;
+  discount?: number;
+  delivery_fee?: number;
+  payment_method?: string;
+}
+

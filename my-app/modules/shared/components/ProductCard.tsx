@@ -1,5 +1,6 @@
 "use client";
 
+import { formatMoney } from "@/utils/format";
 import React from "react";
 
 export type ProductBadgeType = "on_sale" | "out_of_stock" | "low_stock" | "new_arrival";
@@ -13,11 +14,12 @@ export interface ProductItem {
   id: string;
   name: string;
   category: string;
+  category_id?: string | null;
   sku: string;
-  price: string;
-  originalPrice?: string;
+  price: number;
+  originalPrice?: number;
   stockCount: number;
-  imageUrl?: string;
+  images: string[];
   badge?: ProductBadge;
 }
 
@@ -83,19 +85,17 @@ export function ProductCard({
   return (
     <div
       onClick={() => selectable && onSelectToggle?.(product.id)}
-      className={`bg-white rounded-2xl border transition-all duration-200 overflow-hidden flex flex-col justify-between shadow-xs ${
-        selectable ? "cursor-pointer" : ""
-      } ${
-        isSelected
+      className={`bg-white rounded-2xl border transition-all duration-200 overflow-hidden flex flex-col justify-between shadow-xs ${selectable ? "cursor-pointer" : ""
+        } ${isSelected
           ? "border-[#004956] ring-2 ring-[#004956] shadow-md"
           : "border-[#E9E3DE] hover:border-[#CBD5E1]"
-      } ${className}`}
+        } ${className}`}
     >
       {/* Product Image Area */}
       <div className="relative h-48 w-full bg-[#FAF5F2] overflow-hidden flex items-center justify-center shrink-0">
-        {product.imageUrl ? (
+        {product.images.length > 0 ? (
           <img
-            src={product.imageUrl}
+            src={product.images[0]}
             alt={product.name}
             className="w-full h-full object-cover"
           />
@@ -138,11 +138,10 @@ export function ProductCard({
         {selectable && (
           <div className="absolute top-3 right-3 z-10">
             <div
-              className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
-                isSelected
-                  ? "bg-[#004956] border-[#004956] text-white"
-                  : "bg-white/80 border-[#A08C84] text-transparent hover:border-[#004956]"
-              }`}
+              className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${isSelected
+                ? "bg-[#004956] border-[#004956] text-white"
+                : "bg-white/80 border-[#A08C84] text-transparent hover:border-[#004956]"
+                }`}
             >
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
@@ -180,13 +179,13 @@ export function ProductCard({
         {/* Price & Quick Edit Action Row */}
         <div className="flex items-end justify-between pt-2 border-t border-[#F0E8E3] mt-2">
           <div className="flex flex-col">
-            {product.originalPrice && (
+            {product.originalPrice !== undefined && (
               <span className="text-xs text-[#A08C84] line-through leading-none mb-0.5">
-                {product.originalPrice}
+                {formatMoney(product.originalPrice)}
               </span>
             )}
             <span className="text-lg font-bold text-[#1E293B] leading-tight">
-              {product.price}
+              {formatMoney(product.price)}
             </span>
           </div>
 

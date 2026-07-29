@@ -14,6 +14,15 @@ export interface Product {
   step_type?: string;
   discount_percentage?: number | null;
 }
+export interface ProductParams {
+  page?: number;
+  limit?: number;
+  category?: string;
+  categoryId?: string;
+  collection?: string;
+  search?: string;
+  discount?: number;
+}
 
 export interface Variant {
   id: string;

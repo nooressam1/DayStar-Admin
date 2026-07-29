@@ -3,25 +3,30 @@
 import React from "react";
 
 export interface OrderPriceSummaryCardProps {
-  subtotal: number;
-  discount: number;
-  deliveryFee: number;
-  paymentMethodText: string;
-  paymentStatus: string;
+  total?: number;
+  subtotal?: number;
+  discount?: number;
+  deliveryFee?: number;
+  paymentMethodText?: string;
+  paymentStatus?: string;
+  status?: string;
   isRefunded?: boolean;
   className?: string;
 }
 
 export function OrderPriceSummaryCard({
-  subtotal,
-  discount,
-  deliveryFee,
-  paymentMethodText,
-  paymentStatus,
+  total,
+  subtotal = 0,
+  discount = 0,
+  deliveryFee = 0,
+  paymentMethodText = "Cash on Delivery",
+  paymentStatus = "Paid",
+  status = "Processing",
   isRefunded = false,
   className = "",
 }: OrderPriceSummaryCardProps) {
-  const totalPrice = subtotal - discount + deliveryFee;
+  const calculatedTotal = total ?? (subtotal - discount + deliveryFee);
+  const displaySubtotal = subtotal || calculatedTotal;
 
   return (
     <div className={`bg-white rounded-2xl border border-[#E9E3DE] shadow-xs p-6 flex flex-col gap-6 ${className}`}>
@@ -31,19 +36,23 @@ export function OrderPriceSummaryCard({
         <div className="space-y-3 text-sm">
           <div className="flex justify-between items-center text-[#6E5B53]">
             <span>Sub Total</span>
-            <span className="font-semibold text-[#3D2E28]">${subtotal.toFixed(2)}</span>
+            <span className="font-semibold text-[#3D2E28]">${displaySubtotal.toFixed(2)}</span>
           </div>
-          <div className="flex justify-between items-center text-[#6E5B53]">
-            <span>Discount</span>
-            <span className="font-semibold text-[#3D2E28]">${discount.toFixed(2)}</span>
-          </div>
-          <div className="flex justify-between items-center text-[#6E5B53]">
-            <span>Delivery fee</span>
-            <span className="font-semibold text-[#3D2E28]">${deliveryFee.toFixed(2)}</span>
-          </div>
+          {discount > 0 && (
+            <div className="flex justify-between items-center text-[#6E5B53]">
+              <span>Discount</span>
+              <span className="font-semibold text-[#3D2E28]">${discount.toFixed(2)}</span>
+            </div>
+          )}
+          {deliveryFee > 0 && (
+            <div className="flex justify-between items-center text-[#6E5B53]">
+              <span>Delivery fee</span>
+              <span className="font-semibold text-[#3D2E28]">${deliveryFee.toFixed(2)}</span>
+            </div>
+          )}
           <div className="flex justify-between items-center text-[#6E5B53] pt-1">
             <span className="font-bold text-[#583F37]">Total Price</span>
-            <span className="font-bold text-[#583F37] text-base">${totalPrice.toFixed(2)}</span>
+            <span className="font-bold text-[#583F37] text-base">${calculatedTotal.toFixed(2)}</span>
           </div>
         </div>
       </div>
@@ -60,9 +69,9 @@ export function OrderPriceSummaryCard({
           </div>
 
           <div>
-            <p className="text-xs text-[#8A756C] font-medium mb-1">Payment Status</p>
+            <p className="text-xs text-[#8A756C] font-medium mb-1">Status</p>
             <p className="font-semibold text-[#3D2E28]">
-              {isRefunded ? "Refunded" : paymentStatus === "Paid" ? "Paid" : "Unpaid"}
+              {isRefunded ? "Refunded" : status || paymentStatus}
             </p>
           </div>
         </div>
@@ -72,3 +81,4 @@ export function OrderPriceSummaryCard({
 }
 
 export default OrderPriceSummaryCard;
+

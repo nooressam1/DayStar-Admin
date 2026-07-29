@@ -10,13 +10,14 @@ export interface ApiResponseWrapper<T> {
 }
 
 export interface ApiPaginatedResponseWrapper<T> {
-  data: T[];
+  data?: T[];
+  items?: T[];
   total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
-  hasPreviousPage: boolean;
-  hasNextPage: boolean;
+  page?: number;
+  limit?: number;
+  totalPages?: number;
+  hasPreviousPage?: boolean;
+  hasNextPage?: boolean;
 }
 
 export interface PaginatedResponse<T> {
@@ -143,8 +144,17 @@ export class ApiClient {
     }
   ): Promise<T> {
     if (params) {
-      const searchParams = new URLSearchParams(params);
-      endpoint = `${endpoint}?${searchParams.toString()}`;
+      const cleanParams: Record<string, string> = {};
+      Object.entries(params).forEach(([key, val]) => {
+        if (val !== undefined && val !== null && val !== "" && val !== "undefined") {
+          cleanParams[key] = String(val);
+        }
+      });
+
+      if (Object.keys(cleanParams).length > 0) {
+        const searchParams = new URLSearchParams(cleanParams);
+        endpoint = `${endpoint}?${searchParams.toString()}`;
+      }
     }
     const url = `${this.baseUrl}${endpoint}`;
     const controller = new AbortController();
