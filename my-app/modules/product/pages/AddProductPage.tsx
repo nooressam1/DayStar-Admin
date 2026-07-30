@@ -1,9 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import { useRouter } from "next/navigation";
 import { PageHeader, Button, MediaUpload } from "@/modules/shared";
-import { ProductVariant } from "@/types";
 import {
   GeneralInformationCard,
   SkincareQuizCard,
@@ -13,9 +12,7 @@ import {
   InventoryCard,
   OrganizationCard,
 } from "../components";
-
-
-
+import { useAddProductForm, FormErrors } from "../hooks/useAddProductForm";
 
 const skinTypeOptions = ["Oily", "Dry", "Combination", "Sensitive", "Normal", "All Skin Types"];
 const skinConcernOptions = [
@@ -39,87 +36,32 @@ const stepTypeOptions = [
 
 export function AddProductPage() {
   const router = useRouter();
+  const [errors, setErrors] = React.useState<FormErrors>({});
 
-  // Media state
-  const [images, setImages] = useState<string[]>([
-    "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=300&auto=format&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1608248597263-00de4680826d?w=300&auto=format&fit=crop&q=80",
-  ]);
-
-  // General Info state
-  const [productName, setProductName] = useState("");
-  const [description, setDescription] = useState("");
-
-  // Skincare Quiz Fields
-  const [selectedSkinTypes, setSelectedSkinTypes] = useState<string[]>(["Combination", "Sensitive"]);
-  const [selectedConcerns, setSelectedConcerns] = useState<string[]>(["Acne & Blemishes", "Dryness & Dehydration"]);
-  const [routineStep, setRoutineStep] = useState("Serum / Treatment");
-
-  // Status & Sale states (Separate)
-  const [isActive, setIsActive] = useState(true);
-  const [isOnSale, setIsOnSale] = useState(false);
-
-  // Pricing (Percentage based discount for sale items)
-  const [regularPrice, setRegularPrice] = useState("35.00");
-  const [discountPercentage, setDiscountPercentage] = useState("20");
-
-  // Variants state (Sizes & Stock)
-  const [variants, setVariants] = useState<ProductVariant[]>([
-    { id: "var-1", size: "30ml / 1 fl oz", sku: "SKU-SERUM-30", price: 28.00, stock: 50 },
-    { id: "var-2", size: "50ml / 1.7 fl oz", sku: "SKU-SERUM-50", price: 42.00, stock: 35 },
-  ]);
-
-  // Sidebar Inventory & Organization
-  const [mainSku, setMainSku] = useState("SKU-12345");
-  const [totalQuantity, setTotalQuantity] = useState("85");
-  const [category, setCategory] = useState("Skincare");
-
-  const toggleSkinType = (type: string) => {
-    setSelectedSkinTypes((prev) =>
-      prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]
-    );
-  };
-
-  const toggleConcern = (concern: string) => {
-    setSelectedConcerns((prev) =>
-      prev.includes(concern) ? prev.filter((c) => c !== concern) : [...prev, concern]
-    );
-  };
-
-  const handleAddVariantRow = () => {
-    const newVar: ProductVariant = {
-      id: `var-${Date.now()}`,
-      size: "100ml / 3.4 fl oz",
-      sku: `SKU-SERUM-${variants.length + 1}`,
-      price: 65.00,
-      stock: 20,
-    };
-    setVariants([...variants, newVar]);
-  };
-
-  const handleUpdateVariant = (id: string, field: keyof ProductVariant, value: ProductVariant[keyof ProductVariant]) => {
-    setVariants((prev) =>
-      prev.map((v) => (v.id === id ? { ...v, [field]: value } : v))
-    );
-  };
-
-  const handleRemoveVariant = (id: string) => {
-    if (variants.length <= 1) return;
-    setVariants((prev) => prev.filter((v) => v.id !== id));
-  };
-
-  const calculateCalculatedSalePrice = () => {
-    const reg = parseFloat(regularPrice) || 0;
-    const disc = parseFloat(discountPercentage) || 0;
-    if (reg <= 0 || disc <= 0) return reg.toFixed(2);
-    const sale = reg * (1 - disc / 100);
-    return Math.max(0, sale).toFixed(2);
-  };
+  const {
+    state,
+    calculatedSalePrice,
+    validateForm,
+    setField,
+    toggleSkinType,
+    toggleConcern,
+    addVariant,
+    updateVariant,
+    removeVariant,
+  } = useAddProductForm();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const result = validateForm();
+    if (!result.isValid) {
+      setErrors(result.errors);
+      return;
+    }
+    setErrors({});
     router.push("/product");
   };
+
+  const errorList = Object.values(errors).filter(Boolean);
 
   return (
     <div className="flex flex-col gap-6 pb-12">
@@ -147,6 +89,17 @@ export function AddProductPage() {
         }
       />
 
+      {errorList.length > 0 && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700 text-sm space-y-1">
+          <p className="font-semibold">Please fix the following issues before saving:</p>
+          <ul className="list-disc list-inside space-y-0.5">
+            {errorList.map((err, i) => (
+              <li key={i}>{err}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {/* Form Content Grid */}
       <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         {/* Left Column (2 Cols Wide) */}
@@ -155,16 +108,16 @@ export function AddProductPage() {
           <MediaUpload
             label="Product Media"
             multiple
-            value={images}
-            onChange={setImages}
+            value={state.images}
+            onChange={(val) => setField("images", val)}
           />
 
           {/* General Information Card */}
           <GeneralInformationCard
-            productName={productName}
-            onProductNameChange={setProductName}
-            description={description}
-            onDescriptionChange={setDescription}
+            productName={state.productName}
+            onProductNameChange={(val) => setField("productName", val)}
+            description={state.description}
+            onDescriptionChange={(val) => setField("description", val)}
           />
 
           {/* Skincare Quiz & Attributes Card */}
@@ -172,37 +125,37 @@ export function AddProductPage() {
             skinTypeOptions={skinTypeOptions}
             skinConcernOptions={skinConcernOptions}
             stepTypeOptions={stepTypeOptions}
-            selectedSkinTypes={selectedSkinTypes}
+            selectedSkinTypes={state.selectedSkinTypes}
             onToggleSkinType={toggleSkinType}
-            selectedConcerns={selectedConcerns}
+            selectedConcerns={state.selectedConcerns}
             onToggleConcern={toggleConcern}
-            routineStep={routineStep}
-            onRoutineStepChange={setRoutineStep}
+            routineStep={state.routineStep}
+            onRoutineStepChange={(val) => setField("routineStep", val)}
           />
 
           {/* Product Status Card */}
           <ProductStatusCard
-            isActive={isActive}
-            onToggleActive={() => setIsActive(!isActive)}
+            isActive={state.isActive}
+            onToggleActive={() => setField("isActive", !state.isActive)}
           />
 
           {/* Promotional Sale Card */}
           <PromotionalSaleCard
-            isOnSale={isOnSale}
-            onToggleSale={() => setIsOnSale(!isOnSale)}
-            regularPrice={regularPrice}
-            onRegularPriceChange={setRegularPrice}
-            discountPercentage={discountPercentage}
-            onDiscountPercentageChange={setDiscountPercentage}
-            calculatedSalePrice={calculateCalculatedSalePrice()}
+            isOnSale={state.isOnSale}
+            onToggleSale={() => setField("isOnSale", !state.isOnSale)}
+            regularPrice={state.regularPrice}
+            onRegularPriceChange={(val) => setField("regularPrice", val)}
+            discountPercentage={state.discountPercentage}
+            onDiscountPercentageChange={(val) => setField("discountPercentage", val)}
+            calculatedSalePrice={calculatedSalePrice}
           />
 
           {/* Product Variants Card */}
           <ProductVariantsCard
-            variants={variants}
-            onAddVariantRow={handleAddVariantRow}
-            onUpdateVariant={handleUpdateVariant}
-            onRemoveVariant={handleRemoveVariant}
+            variants={state.variants}
+            onAddVariantRow={addVariant}
+            onUpdateVariant={updateVariant}
+            onRemoveVariant={removeVariant}
           />
         </div>
 
@@ -210,16 +163,16 @@ export function AddProductPage() {
         <div className="space-y-6">
           {/* Inventory Card */}
           <InventoryCard
-            mainSku={mainSku}
-            onMainSkuChange={setMainSku}
-            totalQuantity={totalQuantity}
-            onTotalQuantityChange={setTotalQuantity}
+            mainSku={state.mainSku}
+            onMainSkuChange={(val) => setField("mainSku", val)}
+            totalQuantity={state.totalQuantity}
+            onTotalQuantityChange={(val) => setField("totalQuantity", val)}
           />
 
           {/* Organization Card */}
           <OrganizationCard
-            category={category}
-            onCategoryChange={setCategory}
+            category={state.category}
+            onCategoryChange={(val) => setField("category", val)}
           />
         </div>
       </form>

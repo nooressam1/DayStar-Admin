@@ -2,6 +2,7 @@
 
 import React from "react";
 import { Select } from "@/modules/shared";
+import { useGetCategories } from "@/app/api/hooks/useCategories";
 
 export interface OrganizationCardProps {
   category: string;
@@ -23,10 +24,11 @@ const defaultCategoryOptions = [
 export function OrganizationCard({
   category,
   onCategoryChange,
-  categoryOptions = defaultCategoryOptions,
   title = "Organization",
   className = "",
 }: OrganizationCardProps) {
+  const { data: categories = [] } = useGetCategories();
+  const categoryOptions = categories.map((cat) => cat.name);
   return (
     <div className={`bg-white rounded-2xl border border-[#E9E3DE] p-6 shadow-xs space-y-4 ${className}`}>
       <h2 className="text-base font-bold text-[#583F37]">{title}</h2>
