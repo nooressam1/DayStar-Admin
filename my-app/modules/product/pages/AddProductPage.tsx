@@ -40,9 +40,13 @@ const stepTypeOptions = [
   StepType.UNASSIGNED,
 ];
 
+import { useAddProduct } from "@/app/api/hooks/useProducts";
+import { CreateProductDto } from "@/types";
+
 export function AddProductPage() {
   const router = useRouter();
   const [errors, setErrors] = React.useState<FormErrors>({});
+  const { mutate: createProduct, isPending } = useAddProduct();
 
   const {
     state,
@@ -64,7 +68,41 @@ export function AddProductPage() {
       return;
     }
     setErrors({});
-    router.push("/product");
+
+    const slug = state.productName
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9\s-]/g, "")
+      .replace(/\s+/g, "-");
+
+    const payload: CreateProductDto = {
+      name: state.productName,
+      description: state.description,
+      slug,
+      category_id: state.category,
+      images: state.images,
+      price: parseFloat(state.regularPrice) || 0,
+      is_active: state.isActive,
+      on_sale: state.isOnSale,
+      discount_percentage: state.isOnSale ? parseFloat(state.discountPercentage) || null : null,
+      skin_type: state.selectedSkinTypes,
+      concern: state.selectedConcerns,
+      step_type: state.routineStep,
+      variants: state.variants.map((v) => ({
+        size: v.size,
+        sku: v.sku,
+        stock: Number(v.stock) || 0,
+      })),
+    };
+
+    createProduct(payload, {
+      onSuccess: () => {
+        router.push("/product");
+      },
+      onError: (err: any) => {
+        setErrors({ productName: err.message || "Failed to create product." });
+      },
+    });
   };
 
   const errorList = Object.values(errors).filter(Boolean);
@@ -88,8 +126,9 @@ export function AddProductPage() {
             </Button>
             <Button
               onClick={handleSubmit}
+              disabled={isPending}
             >
-              Add Product
+              {isPending ? "Saving Product..." : "Add Product"}
             </Button>
           </>
         }
@@ -169,10 +208,8 @@ export function AddProductPage() {
         <div className="space-y-6">
           {/* Inventory Card */}
           <InventoryCard
-            mainSku={state.mainSku}
-            onMainSkuChange={(val) => setField("mainSku", val)}
-            totalQuantity={state.totalQuantity}
-            onTotalQuantityChange={(val) => setField("totalQuantity", val)}
+            totalPrice={state.regularPrice}
+            onTotalPriceChange={(val) => setField("regularPrice", val)}
           />
 
           {/* Organization Card */}

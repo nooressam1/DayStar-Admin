@@ -27,6 +27,7 @@ export interface ProductParams {
 export interface CreateProductDto {
   name: string;
   description: string;
+  slug?: string;
   category_id?: string | null;
   images: string[];
   price: number;
@@ -43,9 +44,9 @@ export interface Variant {
   id: string;
   product_id: string;
   size: string;
-  price: number;
   stock: number;
   sku: string;
+  created_at?: string;
 }
 
 export type ProductVariant = Omit<Variant, "product_id">;

@@ -7,19 +7,9 @@ import { useGetCategories } from "@/app/api/hooks/useCategories";
 export interface OrganizationCardProps {
   category: string;
   onCategoryChange: (value: string) => void;
-  categoryOptions?: string[];
   title?: string;
   className?: string;
 }
-
-const defaultCategoryOptions = [
-  "Skincare",
-  "Cleanser",
-  "Serum",
-  "Moisturizer",
-  "Electronics",
-  "Clothing",
-];
 
 export function OrganizationCard({
   category,
@@ -28,7 +18,13 @@ export function OrganizationCard({
   className = "",
 }: OrganizationCardProps) {
   const { data: categories = [] } = useGetCategories();
-  const categoryOptions = categories.map((cat) => cat.name);
+  const categoryOptions = [
+    { value: "", label: "Select a category", disabled: true },
+    ...categories.map((cat) => ({
+      value: cat.id,
+      label: cat.name,
+    })),
+  ];
   return (
     <div className={`bg-white rounded-2xl border border-[#E9E3DE] p-6 shadow-xs space-y-4 ${className}`}>
       <h2 className="text-base font-bold text-[#583F37]">{title}</h2>
@@ -43,3 +39,5 @@ export function OrganizationCard({
 }
 
 export default OrganizationCard;
+
+

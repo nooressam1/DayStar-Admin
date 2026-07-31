@@ -25,7 +25,7 @@ export function ProductVariantsCard({
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-base font-bold text-[#583F37]">{title}</h2>
-          <p className="text-xs text-[#7A6860] mt-0.5">Configure different sizes, prices, and stock counts.</p>
+          <p className="text-xs text-[#7A6860] mt-0.5">Configure different sizes and stock counts.</p>
         </div>
         <button
           type="button"
@@ -39,7 +39,7 @@ export function ProductVariantsCard({
       <div className="space-y-3">
         {variants.map((v) => (
           <div key={v.id} className="p-3.5 rounded-xl border border-[#E9E3DE] bg-[#FAF6F4]/50 grid grid-cols-12 gap-3 items-center">
-            <div className="col-span-3">
+            <div className="col-span-4">
               <label className="block text-[10px] font-bold text-[#7A6860] uppercase mb-0.5">SIZE / VARIANT</label>
               <input
                 type="text"
@@ -49,7 +49,7 @@ export function ProductVariantsCard({
                 className="w-full text-xs font-medium border border-[#E9E3DE] rounded-lg p-2 bg-white text-[#3D2E28]"
               />
             </div>
-            <div className="col-span-3">
+            <div className="col-span-4">
               <label className="block text-[10px] font-bold text-[#7A6860] uppercase mb-0.5">SKU</label>
               <input
                 type="text"
@@ -57,16 +57,6 @@ export function ProductVariantsCard({
                 onChange={(e) => onUpdateVariant(v.id, "sku", e.target.value)}
                 placeholder="SKU"
                 className="w-full text-xs border border-[#E9E3DE] rounded-lg p-2 bg-white text-[#3D2E28] font-mono"
-              />
-            </div>
-            <div className="col-span-2">
-              <label className="block text-[10px] font-bold text-[#7A6860] uppercase mb-0.5">PRICE ($)</label>
-              <input
-                type="text"
-                value={v.price}
-                onChange={(e) => onUpdateVariant(v.id, "price", e.target.value)}
-                placeholder="Price"
-                className="w-full text-xs border border-[#E9E3DE] rounded-lg p-2 bg-white text-[#3D2E28] font-semibold"
               />
             </div>
             <div className="col-span-3">

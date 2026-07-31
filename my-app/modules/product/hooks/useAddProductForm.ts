@@ -13,7 +13,6 @@ export interface AddProductState {
   regularPrice: string;
   discountPercentage: string;
   variants: ProductVariant[];
-  mainSku: string;
   totalQuantity: string;
   category: string;
 }
@@ -39,10 +38,9 @@ const initialState: AddProductState = {
   isOnSale: false,
   regularPrice: "35.00",
   discountPercentage: "20",
-  variants: [{ id: "var-1", size: "30ml / 1 fl oz", sku: "SKU-SERUM-30", price: 28.00, stock: 50 }],
-  mainSku: "SKU-12345",
+  variants: [{ id: "var-1", size: "30ml", sku: "SKU-SERUM-30", stock: 50 }],
   totalQuantity: "85",
-  category: "Skincare",
+  category: "",
 };
 
 function addProductReducer(state: AddProductState, action: AddProductAction): AddProductState {
@@ -71,7 +69,6 @@ function addProductReducer(state: AddProductState, action: AddProductAction): Ad
         id: `var-${Date.now()}`,
         size: "100ml / 3.4 fl oz",
         sku: `SKU-SERUM-${state.variants.length + 1}`,
-        price: 65.00,
         stock: 20,
       };
       return { ...state, variants: [...state.variants, newVar] };
@@ -107,7 +104,6 @@ export interface FormErrors {
   regularPrice?: string;
   discountPercentage?: string;
   variants?: string;
-  mainSku?: string;
   totalQuantity?: string;
   category?: string;
 }
@@ -156,15 +152,13 @@ export function useAddProductForm(overrideInitialState?: Partial<AddProductState
       errors.variants = "At least one variant is required.";
     } else {
       const hasInvalidVariant = state.variants.some(
-        (v) => !v.size.trim() || !v.sku.trim() || v.price <= 0 || v.stock < 0
+        (v) => !v.size.trim() || !v.sku.trim() || v.stock < 0
       );
       if (hasInvalidVariant) {
-        errors.variants = "All variants must have size, SKU, valid price, and stock quantity.";
+        errors.variants = "All variants must have size, SKU, and valid stock quantity.";
       }
     }
-    if (!state.mainSku.trim()) {
-      errors.mainSku = "Main SKU is required.";
-    }
+
     if (!state.totalQuantity.trim() || isNaN(parseInt(state.totalQuantity)) || parseInt(state.totalQuantity) < 0) {
       errors.totalQuantity = "Please enter a valid total quantity.";
     }
