@@ -1,4 +1,4 @@
-import { Product, ProductParams } from "@/types";
+import { Product, ProductParams, CreateProductDto } from "@/types";
 import { apiClient, ENDPOINTS } from "@/utils/api";
 
 export class productApi {
@@ -28,5 +28,12 @@ export class productApi {
       console.error("Error fetching products:", error);
       return { items: [], total: 0 };
     }
+  }
+
+  static async createProduct(dto: CreateProductDto): Promise<Product> {
+    return await apiClient.request<Product>(ENDPOINTS.PRODUCT.LIST, undefined, {
+      method: "POST",
+      body: JSON.stringify(dto),
+    });
   }
 }

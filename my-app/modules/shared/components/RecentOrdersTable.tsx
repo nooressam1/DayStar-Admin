@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 
-export type OrderStatus = "SHIPPED" | "PROCESSING" | "PENDING" | "CANCELLED" | "DELIVERED";
+import { OrderStatus } from "@/enums";
 
 export interface RecentOrderItem {
   id: string;
@@ -25,28 +25,28 @@ const defaultOrders: RecentOrderItem[] = [
     id: "#ORD-88210",
     customerName: "Jane Doe",
     customerInitials: "JD",
-    status: "SHIPPED",
+    status: OrderStatus.SHIPPED,
     amount: "$1,240.00",
   },
   {
     id: "#ORD-88209",
     customerName: "Marcus Smith",
     customerInitials: "MS",
-    status: "PROCESSING",
+    status: OrderStatus.PROCESSING,
     amount: "$320.50",
   },
   {
     id: "#ORD-88208",
     customerName: "Laura Reed",
     customerInitials: "LR",
-    status: "PENDING",
+    status: OrderStatus.PENDING,
     amount: "$89.00",
   },
   {
     id: "#ORD-88207",
     customerName: "Chris Kim",
     customerInitials: "CK",
-    status: "SHIPPED",
+    status: OrderStatus.SHIPPED,
     amount: "$2,100.99",
   },
 ];
@@ -59,14 +59,14 @@ export function RecentOrdersTable({
 }: RecentOrdersTableProps) {
   const getStatusBadge = (status: OrderStatus) => {
     switch (status) {
-      case "SHIPPED":
-      case "DELIVERED":
+      case OrderStatus.SHIPPED:
+      case OrderStatus.DELIVERED:
         return "bg-[#80F2C5] text-[#085C3A]";
-      case "PROCESSING":
+      case OrderStatus.PROCESSING:
         return "bg-[#D6E2FF] text-[#2546A3]";
-      case "PENDING":
+      case OrderStatus.PENDING:
         return "bg-[#FFE0E0] text-[#A62424]";
-      case "CANCELLED":
+      case OrderStatus.CANCELLED:
         return "bg-[#E2E8F0] text-[#475569]";
       default:
         return "bg-stone-100 text-stone-700";

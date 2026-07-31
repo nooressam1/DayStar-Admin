@@ -26,13 +26,15 @@ export type AddProductAction =
   | { type: "UPDATE_VARIANT"; id: string; field: keyof ProductVariant; value: any }
   | { type: "REMOVE_VARIANT"; id: string };
 
+import { StepType } from "@/enums";
+
 const initialState: AddProductState = {
   images: ["https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=300&auto=format&fit=crop&q=80"],
   productName: "",
   description: "",
   selectedSkinTypes: ["Combination", "Sensitive"],
   selectedConcerns: ["Acne & Blemishes", "Dryness & Dehydration"],
-  routineStep: "Serum / Treatment",
+  routineStep: StepType.SERUM,
   isActive: true,
   isOnSale: false,
   regularPrice: "35.00",

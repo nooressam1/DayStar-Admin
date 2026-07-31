@@ -4,15 +4,15 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { PageHeader, Filter, FilterConfig, Table, ColumnConfig, Pagination } from "@/modules/shared";
-import { Order } from "@/types";
+import { OrderStatus, PaymentStatus } from "@/enums";
 
-export interface OrderRecord extends Partial<Order> {
+export interface OrderRecord {
   id: string;
   customerName: string;
   customerInitials: string;
   date: string;
-  status: any;
-  paymentStatus: "Paid" | "Pending" | "Refunded" | "Failed";
+  status: OrderStatus;
+  paymentStatus: PaymentStatus | string;
   amount: string;
 }
 
@@ -22,8 +22,8 @@ const sampleOrders: OrderRecord[] = [
     customerName: "Jane Doe",
     customerInitials: "JD",
     date: "2026-07-21",
-    status: "SHIPPED",
-    paymentStatus: "Paid",
+    status: OrderStatus.SHIPPED,
+    paymentStatus: PaymentStatus.PAID,
     amount: "$1,240.00",
   },
   {
@@ -31,8 +31,8 @@ const sampleOrders: OrderRecord[] = [
     customerName: "Marcus Smith",
     customerInitials: "MS",
     date: "2026-07-20",
-    status: "PROCESSING",
-    paymentStatus: "Paid",
+    status: OrderStatus.PROCESSING,
+    paymentStatus: PaymentStatus.PAID,
     amount: "$320.50",
   },
   {
@@ -40,8 +40,8 @@ const sampleOrders: OrderRecord[] = [
     customerName: "Laura Reed",
     customerInitials: "LR",
     date: "2026-07-19",
-    status: "PENDING",
-    paymentStatus: "Pending",
+    status: OrderStatus.PENDING,
+    paymentStatus: PaymentStatus.PENDING,
     amount: "$89.00",
   },
   {
@@ -49,8 +49,8 @@ const sampleOrders: OrderRecord[] = [
     customerName: "Chris Kim",
     customerInitials: "CK",
     date: "2026-07-18",
-    status: "SHIPPED",
-    paymentStatus: "Paid",
+    status: OrderStatus.SHIPPED,
+    paymentStatus: PaymentStatus.PAID,
     amount: "$2,100.99",
   },
   {
@@ -58,8 +58,8 @@ const sampleOrders: OrderRecord[] = [
     customerName: "Sophia Patel",
     customerInitials: "SP",
     date: "2026-07-17",
-    status: "DELIVERED",
-    paymentStatus: "Paid",
+    status: OrderStatus.DELIVERED,
+    paymentStatus: PaymentStatus.PAID,
     amount: "$540.00",
   },
   {
@@ -67,8 +67,8 @@ const sampleOrders: OrderRecord[] = [
     customerName: "Alexander Wright",
     customerInitials: "AW",
     date: "2026-07-16",
-    status: "CANCELLED",
-    paymentStatus: "Refunded",
+    status: OrderStatus.CANCELLED,
+    paymentStatus: PaymentStatus.REFUNDED,
     amount: "$150.00",
   },
 ];
@@ -107,14 +107,14 @@ export function OrderPage() {
 
   const getStatusBadge = (status: OrderRecord["status"]) => {
     switch (status) {
-      case "SHIPPED":
-      case "DELIVERED":
+      case OrderStatus.SHIPPED:
+      case OrderStatus.DELIVERED:
         return "bg-[#80F2C5] text-[#085C3A]";
-      case "PROCESSING":
+      case OrderStatus.PROCESSING:
         return "bg-[#D6E2FF] text-[#2546A3]";
-      case "PENDING":
+      case OrderStatus.PENDING:
         return "bg-[#FFE0E0] text-[#A62424]";
-      case "CANCELLED":
+      case OrderStatus.CANCELLED:
         return "bg-[#E2E8F0] text-[#475569]";
       default:
         return "bg-stone-100 text-stone-700";
@@ -129,11 +129,11 @@ export function OrderPage() {
       onChange: setStatusFilter,
       options: [
         { label: "All Statuses", value: "All Statuses" },
-        { label: "Shipped", value: "SHIPPED" },
-        { label: "Processing", value: "PROCESSING" },
-        { label: "Pending", value: "PENDING" },
-        { label: "Delivered", value: "DELIVERED" },
-        { label: "Cancelled", value: "CANCELLED" },
+        { label: "Shipped", value: OrderStatus.SHIPPED },
+        { label: "Processing", value: OrderStatus.PROCESSING },
+        { label: "Pending", value: OrderStatus.PENDING },
+        { label: "Delivered", value: OrderStatus.DELIVERED },
+        { label: "Cancelled", value: OrderStatus.CANCELLED },
       ],
     },
     {
@@ -149,10 +149,10 @@ export function OrderPage() {
       onChange: setPaymentFilter,
       options: [
         { label: "Payment: All", value: "Payment: All" },
-        { label: "Paid", value: "Paid" },
-        { label: "Pending", value: "Pending" },
-        { label: "Refunded", value: "Refunded" },
-        { label: "Failed", value: "Failed" },
+        { label: "Paid", value: PaymentStatus.PAID },
+        { label: "Pending", value: PaymentStatus.PENDING },
+        { label: "Refunded", value: PaymentStatus.REFUNDED },
+        { label: "Failed", value: PaymentStatus.FAILED },
       ],
     },
     {

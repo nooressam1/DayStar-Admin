@@ -24,6 +24,21 @@ export interface ProductParams {
   discount?: number;
 }
 
+export interface CreateProductDto {
+  name: string;
+  description: string;
+  category_id?: string | null;
+  images: string[];
+  price: number;
+  is_active?: boolean;
+  on_sale?: boolean;
+  discount_percentage?: number | null;
+  skin_type?: string[];
+  concern?: string[];
+  step_type?: string;
+  variants?: Omit<Variant, "id" | "product_id">[];
+}
+
 export interface Variant {
   id: string;
   product_id: string;

@@ -13,25 +13,31 @@ import {
   OrganizationCard,
 } from "../components";
 import { useAddProductForm, FormErrors } from "../hooks/useAddProductForm";
+import { SkinType, SkinConcern, StepType } from "@/enums";
 
-const skinTypeOptions = ["Oily", "Dry", "Combination", "Sensitive", "Normal", "All Skin Types"];
+const skinTypeOptions = [
+  SkinType.OILY,
+  SkinType.DRY,
+  SkinType.COMBINATION,
+  SkinType.SENSITIVE,
+  SkinType.NORMAL,
+  "All Skin Types",
+];
 const skinConcernOptions = [
-  "Acne & Blemishes",
-  "Aging & Fine Lines",
-  "Hyperpigmentation",
-  "Dryness & Dehydration",
-  "Redness & Sensitivity",
-  "Uneven Texture",
-  "Enlarged Pores",
+  SkinConcern.ACNE,
+  SkinConcern.PIGMENTATION,
+  SkinConcern.AGING,
+  SkinConcern.REDNESS,
+  SkinConcern.DRYNESS,
 ];
 const stepTypeOptions = [
-  "Cleanser",
-  "Toner",
-  "Serum / Treatment",
-  "Moisturizer",
-  "Sunscreen / SPF",
-  "Eye Cream",
-  "Exfoliator / Mask",
+  StepType.CLEANSER,
+  StepType.TONER,
+  StepType.SERUM,
+  StepType.TREATMENT,
+  StepType.MOISTURIZER,
+  StepType.SPF,
+  StepType.UNASSIGNED,
 ];
 
 export function AddProductPage() {

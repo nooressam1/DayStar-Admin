@@ -2,6 +2,7 @@
 
 import React from "react";
 import { Select } from "@/modules/shared";
+import { SkinType, SkinConcern, StepType } from "@/enums";
 
 export interface SkincareQuizCardProps {
   skinTypeOptions?: string[];
@@ -17,24 +18,29 @@ export interface SkincareQuizCardProps {
   className?: string;
 }
 
-const defaultSkinTypeOptions = ["Oily", "Dry", "Combination", "Sensitive", "Normal", "All Skin Types"];
+const defaultSkinTypeOptions = [
+  SkinType.OILY,
+  SkinType.DRY,
+  SkinType.COMBINATION,
+  SkinType.SENSITIVE,
+  SkinType.NORMAL,
+  "All Skin Types",
+];
 const defaultSkinConcernOptions = [
-  "Acne & Blemishes",
-  "Aging & Fine Lines",
-  "Hyperpigmentation",
-  "Dryness & Dehydration",
-  "Redness & Sensitivity",
-  "Uneven Texture",
-  "Enlarged Pores",
+  SkinConcern.ACNE,
+  SkinConcern.PIGMENTATION,
+  SkinConcern.AGING,
+  SkinConcern.REDNESS,
+  SkinConcern.DRYNESS,
 ];
 const defaultStepTypeOptions = [
-  "Cleanser",
-  "Toner",
-  "Serum / Treatment",
-  "Moisturizer",
-  "Sunscreen / SPF",
-  "Eye Cream",
-  "Exfoliator / Mask",
+  StepType.CLEANSER,
+  StepType.TONER,
+  StepType.SERUM,
+  StepType.TREATMENT,
+  StepType.MOISTURIZER,
+  StepType.SPF,
+  StepType.UNASSIGNED,
 ];
 
 export function SkincareQuizCard({
@@ -75,11 +81,10 @@ export function SkincareQuizCard({
                 key={type}
                 type="button"
                 onClick={() => onToggleSkinType(type)}
-                className={`px-3.5 py-1.5 text-xs font-medium rounded-full border transition-colors cursor-pointer ${
-                  isSelected
+                className={`px-3.5 py-1.5 text-xs font-medium rounded-full border transition-colors cursor-pointer capitalize ${isSelected
                     ? "bg-[#004D5A] text-white border-[#004D5A]"
                     : "bg-[#FAF5F2] text-[#6E5B53] border-[#E9E3DE] hover:bg-[#F3ECE6]"
-                }`}
+                  }`}
               >
                 {type} {isSelected && "✓"}
               </button>
@@ -101,11 +106,10 @@ export function SkincareQuizCard({
                 key={concern}
                 type="button"
                 onClick={() => onToggleConcern(concern)}
-                className={`px-3.5 py-1.5 text-xs font-medium rounded-full border transition-colors cursor-pointer ${
-                  isSelected
+                className={`px-3.5 py-1.5 text-xs font-medium rounded-full border transition-colors cursor-pointer capitalize ${isSelected
                     ? "bg-[#583F37] text-white border-[#583F37]"
                     : "bg-[#FAF5F2] text-[#6E5B53] border-[#E9E3DE] hover:bg-[#F3ECE6]"
-                }`}
+                  }`}
               >
                 {concern} {isSelected && "✓"}
               </button>
@@ -118,7 +122,11 @@ export function SkincareQuizCard({
         label="Routine Step Type"
         value={routineStep}
         onChange={(e) => onRoutineStepChange(e.target.value)}
-        options={stepTypeOptions}
+        className="capitalize"
+        options={stepTypeOptions.map((step) => ({
+          value: step,
+          label: step.charAt(0).toUpperCase() + step.slice(1).toLowerCase(),
+        }))}
       />
     </div>
   );

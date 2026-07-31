@@ -8,7 +8,8 @@ export type { DashboardStatsProps } from "./components/DashboardStats";
 export { SalesChart } from "./components/SalesChart";
 export type { SalesChartProps, SalesChartItem } from "./components/SalesChart";
 export { RecentOrdersTable } from "./components/RecentOrdersTable";
-export type { RecentOrdersTableProps, RecentOrderItem, OrderStatus } from "./components/RecentOrdersTable";
+export type { RecentOrdersTableProps, RecentOrderItem } from "./components/RecentOrdersTable";
+export { OrderStatus, PaymentStatus } from "@/enums";
 
 export {
   Table,

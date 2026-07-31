@@ -1,5 +1,5 @@
-import { Product, ProductParams } from "@/types";
-import { useQuery } from "@tanstack/react-query";
+import { Product, ProductParams, CreateProductDto } from "@/types";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { productApi } from "../endpoints/products";
 
 export const useGetProducts = (params?: ProductParams) => {
@@ -14,5 +14,15 @@ export const useGetProduct = (id: string) => {
     queryKey: ["product", id],
     queryFn: () => productApi.getProduct(id),
     enabled: Boolean(id),
+  });
+};
+export const useAddProduct = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<Product, Error, CreateProductDto>({
+    mutationFn: (newProduct) => productApi.createProduct(newProduct),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+    }
   });
 };
