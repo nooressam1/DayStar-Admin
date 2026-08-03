@@ -17,22 +17,59 @@ export function formatProductForCard(item: any): ProductItem {
   }
 
   const rawPrice = typeof item.price === "number" ? item.price : parsePrice(item.price);
-  const rawOriginalPrice = item.originalPrice !== undefined
-    ? (typeof item.originalPrice === "number" ? item.originalPrice : parsePrice(item.originalPrice))
-    : undefined;
+  
+  const isOnSale = Boolean(
+    item.on_sale || 
+    item.isOnSale || 
+    (item.discount_percentage && Number(item.discount_percentage) > 0)
+  );
+  const discountPct = Number(item.discount_percentage) || 0;
 
+  let activePrice = rawPrice;
+  let originalPrice: number | undefined = undefined;
+
+  if (isOnSale) {
+    if (discountPct > 0) {
+      originalPrice = rawPrice;
+      activePrice = Math.max(0, rawPrice * (1 - discountPct / 100));
+    } else if (item.sale_price !== undefined || item.salePrice !== undefined) {
+      originalPrice = rawPrice;
+      activePrice = typeof item.sale_price === "number" 
+        ? item.sale_price 
+        : parsePrice(item.sale_price || item.salePrice);
+    } else if (item.originalPrice !== undefined) {
+      const orig = typeof item.originalPrice === "number" ? item.originalPrice : parsePrice(item.originalPrice);
+      if (orig > rawPrice) {
+        originalPrice = orig;
+      }
+    }
+  }
+
+  const categoryName = item.category?.name || item.category_name || (typeof item.category === "string" ? item.category : "GENERAL");
   const images: string[] = Array.isArray(item.images) ? item.images : [];
+  const variants: Array<{ stock?: number; sku?: string }> = Array.isArray(item.variants) ? item.variants : [];
+  const totalStock = variants.length > 0
+    ? variants.reduce((sum, v) => sum + (Number(v.stock) || 0), 0)
+    : (item.stockCount ?? item.stock ?? 0);
+
+  let badge = item.badge;
+  if (!badge && isOnSale) {
+    badge = {
+      type: "on_sale",
+      label: discountPct > 0 ? `${discountPct}% OFF` : "SALE",
+    };
+  }
 
   return {
     id: String(item.id || item.slug || Math.random()),
     name: item.name || "Untitled Product",
-    category: item.category || "GENERAL",
+    category: categoryName,
     category_id: item.category_id || null,
-    sku: item.sku || (item.slug ? item.slug.toUpperCase() : "SKU-001"),
-    price: rawPrice,
-    originalPrice: rawOriginalPrice,
-    stockCount: item.stockCount ?? item.stock ?? 10,
+    sku: item.sku || variants[0]?.sku || (item.slug ? item.slug.toUpperCase() : "SKU-001"),
+    price: activePrice,
+    originalPrice: originalPrice,
+    stockCount: totalStock,
     images,
-    badge: item.badge || (item.on_sale ? { type: "on_sale", label: "SALE" } : undefined),
+    badge,
   };
 }

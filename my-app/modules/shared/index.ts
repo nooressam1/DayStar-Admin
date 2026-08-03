@@ -64,8 +64,6 @@ export { Pagination } from "./components/Pagination";
 export type { PaginationProps } from "./components/Pagination";
 export { ProductCard } from "./components/ProductCard";
 export type { ProductCardProps, ProductItem, ProductBadge, ProductBadgeType } from "./components/ProductCard";
-export { BulkEditForm } from "./components/BulkEditForm";
-export type { BulkEditFormProps, BulkEditFormData } from "./components/BulkEditForm";
 export { PageHeader } from "./components/PageHeader";
 export type { PageHeaderProps } from "./components/PageHeader";
 export { Button } from "./components/Button";

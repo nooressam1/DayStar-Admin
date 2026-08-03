@@ -26,3 +26,26 @@ export const useAddProduct = () => {
     }
   });
 };
+
+export const useBulkUpdateProducts = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<Product[], Error, Parameters<typeof productApi.bulkUpdateProducts>[0]>({
+    mutationFn: (payload) => productApi.bulkUpdateProducts(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+    },
+  });
+};
+
+export const useUpdateProduct = (id: string) => {
+  const queryClient = useQueryClient();
+
+  return useMutation<Product, Error, any>({
+    mutationFn: (payload) => productApi.updateProduct(id, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.invalidateQueries({ queryKey: ["product", id] });
+    },
+  });
+};

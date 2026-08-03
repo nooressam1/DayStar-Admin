@@ -38,10 +38,13 @@ export function ProductPage() {
     turnOffSelect,
     handleSelectToggle,
     isSelected,
+    selectedIds
+
   } = useSelectMode();
 
   const handleEditSelected = () => {
-    router.push("/product/edit");
+    if (selectedIds.length === 0) return;
+    router.push(`/product/edit?ids=${selectedIds.join(",")}`);
   };
 
   const handleExportProducts = () => {
@@ -141,7 +144,7 @@ export function ProductPage() {
       {/* Product Catalog Display */}
       {!isLoading ? (
         filteredProducts.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {filteredProducts.map((product: ProductItem) => (
               <ProductCard
                 key={product.id}

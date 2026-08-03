@@ -39,6 +39,7 @@ export function useSelectMode(options: UseSelectModeOptions = {}) {
     );
   }, []);
 
+
   const selectAll = useCallback((ids: string[]) => {
     setSelectedIds(ids);
   }, []);
@@ -59,6 +60,7 @@ export function useSelectMode(options: UseSelectModeOptions = {}) {
     setSelectedIds,
     selectedCount: selectedIds.length,
     turnOnSelect,
+
     turnOffSelect,
     toggleSelectMode,
     handleSelectToggle,

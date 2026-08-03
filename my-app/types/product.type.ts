@@ -22,6 +22,8 @@ export interface ProductParams {
   collection?: string;
   search?: string;
   discount?: number;
+  includeInactive?: boolean;
+  all?: boolean;
 }
 
 export interface CreateProductDto {

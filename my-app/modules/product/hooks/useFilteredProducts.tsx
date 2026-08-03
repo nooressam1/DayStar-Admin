@@ -11,6 +11,7 @@ import { parsePrice } from "@/utils/format";
 export interface UseFilteredProductsOptions {
   customProducts?: ProductItem[];
   itemsPerPage?: number;
+  includeInactive?: boolean;
 }
 
 const ITEMS_PER_PAGE = 12;
@@ -86,6 +87,7 @@ export function useFilteredProducts(options: UseFilteredProductsOptions = {}) {
   const { data: response, isLoading, isError } = useGetProducts({
     ...(categoryId ? { categoryId } : {}),
     ...(searchQuery ? { search: searchQuery } : {}),
+    includeInactive: options.includeInactive ?? true,
     page: currentPage,
     limit,
   });

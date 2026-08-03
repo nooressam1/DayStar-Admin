@@ -177,7 +177,7 @@ export function ProductCard({
         </div>
 
         {/* Price & Quick Edit Action Row */}
-        <div className="flex items-end justify-between pt-2 border-t border-[#F0E8E3] mt-2">
+        <div className="flex items-center justify-between pt-2 border-t border-[#F0E8E3] mt-2">
           <div className="flex flex-col">
             {product.originalPrice !== undefined && (
               <span className="text-xs text-[#A08C84] line-through leading-none mb-0.5">
@@ -195,7 +195,7 @@ export function ProductCard({
               e.stopPropagation();
               onQuickEdit?.(product);
             }}
-            className="border border-[#004956] text-[#004956] hover:bg-[#004956]/5 text-xs font-semibold px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
+            className="border border-[#004956] text-[#004956] hover:bg-[#004956]/5 text-xs font-semibold px-3 py-1.5 rounded-xl flex items-center gap-1 transition-colors cursor-pointer shrink-0"
           >
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path

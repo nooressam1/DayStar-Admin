@@ -1,3 +1,5 @@
+"use client";
+
 import { useReducer, useMemo } from "react";
 import { ProductVariant } from "@/types";
 
@@ -19,6 +21,7 @@ export interface AddProductState {
 
 export type AddProductAction =
   | { type: "SET_FIELD"; field: keyof AddProductState; value: any }
+  | { type: "SET_STATE"; state: Partial<AddProductState> }
   | { type: "TOGGLE_SKIN_TYPE"; skinType: string }
   | { type: "TOGGLE_CONCERN"; concern: string }
   | { type: "ADD_VARIANT" }
@@ -47,6 +50,9 @@ function addProductReducer(state: AddProductState, action: AddProductAction): Ad
   switch (action.type) {
     case "SET_FIELD":
       return { ...state, [action.field]: action.value };
+
+    case "SET_STATE":
+      return { ...state, ...action.state };
 
     case "TOGGLE_SKIN_TYPE":
       return {
@@ -196,17 +202,44 @@ export function useAddProductForm(overrideInitialState?: Partial<AddProductState
     dispatch({ type: "REMOVE_VARIANT", id });
   };
 
+  const setFormState = (newState: Partial<AddProductState>) => {
+    dispatch({ type: "SET_STATE", state: newState });
+  };
+
   return {
     state,
     dispatch,
     calculatedSalePrice,
     validateForm,
     setField,
+    setFormState,
     toggleSkinType,
     toggleConcern,
     addVariant,
     updateVariant,
     removeVariant,
+  };
+}
+
+export function mapProductToFormState(product: any): Partial<AddProductState> {
+  return {
+    images: product.images && product.images.length > 0 ? product.images : [],
+    productName: product.name || "",
+    description: product.description || "",
+    selectedSkinTypes: product.skin_type || [],
+    selectedConcerns: product.concern || [],
+    routineStep: product.step_type || "",
+    isActive: product.is_active ?? true,
+    isOnSale: product.on_sale ?? false,
+    regularPrice: ((product.price || 0) / 100).toFixed(2),
+    discountPercentage: product.discount_percentage ? product.discount_percentage.toString() : "",
+    category: product.category_id || product.category?.id || "",
+    variants: (product.variants || []).map((v: any) => ({
+      id: v.id,
+      size: v.size || "",
+      sku: v.sku || "",
+      stock: v.stock ?? 0,
+    })),
   };
 }
 

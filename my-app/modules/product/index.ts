@@ -17,5 +17,6 @@ export { OrganizationCard } from "./components/OrganizationCard";
 export type { OrganizationCardProps } from "./components/OrganizationCard";
 export * from "./hooks/useFilteredProducts";
 export * from "./hooks/useSelectMode";
+export * from "./hooks/useBulkEditForm";
 export * from "./utils/FormatProduct";
 export * from "./utils/csv";
