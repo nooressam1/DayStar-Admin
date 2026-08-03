@@ -222,24 +222,35 @@ export function useAddProductForm(overrideInitialState?: Partial<AddProductState
 }
 
 export function mapProductToFormState(product: any): Partial<AddProductState> {
+  if (!product) return {};
+
+  const priceVal = Number(product.price) || 0;
+  const regularPrice = priceVal > 500 ? (priceVal / 100).toFixed(2) : priceVal.toFixed(2);
+
   return {
-    images: product.images && product.images.length > 0 ? product.images : [],
+    images: Array.isArray(product.images) && product.images.length > 0 ? product.images : [],
     productName: product.name || "",
     description: product.description || "",
-    selectedSkinTypes: product.skin_type || [],
-    selectedConcerns: product.concern || [],
+    selectedSkinTypes: Array.isArray(product.skin_type) ? product.skin_type : [],
+    selectedConcerns: Array.isArray(product.concern) ? product.concern : [],
     routineStep: product.step_type || "",
     isActive: product.is_active ?? true,
     isOnSale: product.on_sale ?? false,
-    regularPrice: ((product.price || 0) / 100).toFixed(2),
-    discountPercentage: product.discount_percentage ? product.discount_percentage.toString() : "",
+    regularPrice,
+    discountPercentage:
+      product.discount_percentage !== undefined && product.discount_percentage !== null
+        ? product.discount_percentage.toString()
+        : "",
     category: product.category_id || product.category?.id || "",
-    variants: (product.variants || []).map((v: any) => ({
-      id: v.id,
-      size: v.size || "",
-      sku: v.sku || "",
-      stock: v.stock ?? 0,
-    })),
+    variants:
+      Array.isArray(product.variants) && product.variants.length > 0
+        ? product.variants.map((v: any) => ({
+            id: v.id,
+            size: v.size || "",
+            sku: v.sku || "",
+            stock: v.stock ?? 0,
+          }))
+        : [{ id: `var-${Date.now()}`, size: "Standard", sku: `SKU-${product.id || '1'}`, stock: 0 }],
   };
 }
 

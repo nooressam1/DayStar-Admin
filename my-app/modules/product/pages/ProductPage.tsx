@@ -152,7 +152,7 @@ export function ProductPage() {
                 selectable={isSelectMode}
                 isSelected={isSelected(product.id)}
                 onSelectToggle={handleSelectToggle}
-                onQuickEdit={() => router.push("/product/edit")}
+                onQuickEdit={() => router.push(`/product/new?id=${product.id}`)}
               />
             ))}
           </div>
