@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { PageHeader, Pagination, Button, Modal, Filter, FilterConfig, Table, ColumnConfig } from "@/modules/shared";
+import { PageHeader, Pagination, Modal, Filter, FilterConfig, Table, ColumnConfig } from "@/modules/shared";
 import { Discount } from "@/types";
+import { fetchDiscountsApi, deleteDiscountApi } from "../utils/discountStorage";
 
 export interface DiscountRecord extends Partial<Discount> {
   id: string;
@@ -20,121 +21,29 @@ export interface DiscountRecord extends Partial<Discount> {
   minRequirementValue?: string;
 }
 
-const initialDiscounts: DiscountRecord[] = [
-  {
-    id: "disc-1",
-    code: "SUMMER2026",
-    title: "Summer Sale 20% Off",
-    type: "Percentage",
-    value: "20% OFF",
-    status: "Active",
-    usageCount: 142,
-    usageLimit: 500,
-    startDate: "2026-06-01",
-    endDate: "2026-08-31",
-  },
-  {
-    id: "disc-2",
-    code: "WELCOME10",
-    title: "New Customer Welcome Discount",
-    type: "Fixed Amount",
-    value: "$10.00 OFF",
-    status: "Active",
-    usageCount: 89,
-    startDate: "2026-01-01",
-    endDate: "2026-12-31",
-  },
-  {
-    id: "disc-3",
-    code: "AUTUMN15",
-    title: "Upcoming Fall Season Special",
-    type: "Percentage",
-    value: "15% OFF",
-    status: "Scheduled",
-    usageCount: 0,
-    usageLimit: 200,
-    startDate: "2026-09-01",
-    endDate: "2026-11-30",
-  },
-  {
-    id: "disc-4",
-    code: "FREESHIP50",
-    title: "Free Express Shipping on $50+",
-    type: "Free Shipping",
-    value: "Free Shipping",
-    status: "Active",
-    usageCount: 310,
-    startDate: "2026-03-15",
-    endDate: "2026-12-31",
-  },
-  {
-    id: "disc-5",
-    code: "SPRING2025",
-    title: "Spring Clearance Promotion",
-    type: "Percentage",
-    value: "25% OFF",
-    status: "Expired",
-    usageCount: 500,
-    usageLimit: 500,
-    startDate: "2025-03-01",
-    endDate: "2025-05-31",
-  },
-  {
-    id: "disc-6",
-    code: "VIPMEMBER30",
-    title: "Exclusive VIP Member Discount",
-    type: "Percentage",
-    value: "30% OFF",
-    status: "Active",
-    usageCount: 64,
-    usageLimit: 100,
-    startDate: "2026-02-01",
-    endDate: "2026-12-31",
-  },
-];
-
 export function DiscountPage() {
   const router = useRouter();
+  const [discounts, setDiscounts] = useState<DiscountRecord[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("All Statuses");
   const [typeFilter, setTypeFilter] = useState("All Types");
-  const [discounts, setDiscounts] = useState<DiscountRecord[]>(initialDiscounts);
   const [searchQuery, setSearchQuery] = useState("");
-
-  // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 4;
-
-  // Toast / Copy Feedback State
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
-
-  // Modal States
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [editingDiscount, setEditingDiscount] = useState<DiscountRecord | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  // Form State for Create/Edit
-  const [formData, setFormData] = useState({
-    code: "",
-    title: "",
-    type: "Percentage" as DiscountRecord["type"],
-    value: "20",
-    status: "Active" as DiscountRecord["status"],
-    startDate: "2026-06-01",
-    endDate: "",
-  });
+  const itemsPerPage = 4;
 
-  // Minimum requirements state
-  const [minRequirementOption, setMinRequirementOption] = useState<"none" | "amount" | "quantity">("none");
-  const [minPurchaseAmount, setMinPurchaseAmount] = useState("");
-  const [minQuantity, setMinQuantity] = useState("");
+  useEffect(() => {
+    setIsLoading(true);
+    fetchDiscountsApi()
+      .then(setDiscounts)
+      .finally(() => setIsLoading(false));
+  }, []);
 
   const filteredDiscounts = discounts.filter((d) => {
-    if (statusFilter !== "All Statuses" && d.status !== statusFilter) {
-      return false;
-    }
-    if (typeFilter !== "All Types" && d.type !== typeFilter) {
-      return false;
-    }
+    if (statusFilter !== "All Statuses" && d.status !== statusFilter) return false;
+    if (typeFilter !== "All Types" && d.type !== typeFilter) return false;
     if (
       searchQuery &&
       !d.code.toLowerCase().includes(searchQuery.toLowerCase()) &&
@@ -157,103 +66,10 @@ export function DiscountPage() {
     setTimeout(() => setCopiedCode(null), 2000);
   };
 
-  const handleOpenCreate = () => {
-    setFormData({
-      code: "SUMMER-SALE-20",
-      title: "Summer Promotion",
-      type: "Percentage",
-      value: "20",
-      status: "Active",
-      startDate: "2026-06-01",
-      endDate: "",
-    });
-    setMinRequirementOption("none");
-    setMinPurchaseAmount("");
-    setMinQuantity("");
-    setEditingDiscount(null);
-    setShowCreateModal(true);
-  };
-
-  const handleOpenEdit = (discount: DiscountRecord) => {
-    setEditingDiscount(discount);
-    setFormData({
-      code: discount.code,
-      title: discount.title || "",
-      type: (discount.type as any) || "Percentage",
-      value: String(discount.value || "").replace(/[^0-9.]/g, "") || "20",
-      status: discount.status || "Active",
-      startDate: discount.startDate || "2026-06-01",
-      endDate: discount.endDate || "",
-    });
-    setMinRequirementOption(discount.minRequirementType || "none");
-    setMinPurchaseAmount(discount.minRequirementType === "amount" ? discount.minRequirementValue || "" : "");
-    setMinQuantity(discount.minRequirementType === "quantity" ? discount.minRequirementValue || "" : "");
-    setShowCreateModal(true);
-  };
-
-  const handleSaveDiscount = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formData.code) return;
-
-    const formattedValue =
-      formData.type === "Free Shipping"
-        ? "Free Shipping"
-        : formData.type === "Fixed Amount"
-          ? `$${formData.value || "10"}.00 OFF`
-          : `${formData.value || "20"}% OFF`;
-
-    if (editingDiscount) {
-      setDiscounts((prev) =>
-        prev.map((d) =>
-          d.id === editingDiscount.id
-            ? {
-              ...d,
-              code: formData.code.toUpperCase(),
-              title: formData.title || `${formData.code} Discount`,
-              type: formData.type,
-              value: formattedValue,
-              status: formData.status,
-              startDate: formData.startDate || new Date().toISOString().split("T")[0],
-              endDate: formData.endDate || "2026-12-31",
-              minRequirementType: minRequirementOption,
-              minRequirementValue:
-                minRequirementOption === "amount"
-                  ? minPurchaseAmount
-                  : minRequirementOption === "quantity"
-                    ? minQuantity
-                    : undefined,
-            }
-            : d
-        )
-      );
-    } else {
-      const created: DiscountRecord = {
-        id: `disc-${Date.now()}`,
-        code: formData.code.toUpperCase(),
-        title: formData.title || `${formData.code} Discount`,
-        type: formData.type,
-        value: formattedValue,
-        status: formData.status,
-        usageCount: 0,
-        startDate: formData.startDate || new Date().toISOString().split("T")[0],
-        endDate: formData.endDate || "2026-12-31",
-        minRequirementType: minRequirementOption,
-        minRequirementValue:
-          minRequirementOption === "amount"
-            ? minPurchaseAmount
-            : minRequirementOption === "quantity"
-              ? minQuantity
-              : undefined,
-      };
-      setDiscounts([created, ...discounts]);
-    }
-
-    setShowCreateModal(false);
-    setEditingDiscount(null);
-  };
-
-  const handleDeleteDiscount = (id: string) => {
-    setDiscounts((prev) => prev.filter((d) => d.id !== id));
+  const handleDeleteDiscount = async () => {
+    if (!deletingId) return;
+    await deleteDiscountApi(deletingId);
+    setDiscounts((prev) => prev.filter((d) => d.id !== deletingId));
     setDeletingId(null);
   };
 
@@ -389,21 +205,6 @@ export function DiscountPage() {
       accessor: (discount) => (
         <div className="flex items-center justify-end gap-1.5">
           <button
-            onClick={() => handleOpenEdit(discount)}
-            title="Edit Discount"
-            className="p-1.5 rounded-lg text-[#583F37] hover:bg-[#FAF5F2] border border-transparent hover:border-[#E9E3DE] transition-colors cursor-pointer"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.8}
-                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-              />
-            </svg>
-          </button>
-
-          <button
             onClick={() => setDeletingId(discount.id)}
             title="Delete Discount"
             className="p-1.5 rounded-lg text-red-600 hover:bg-red-50 border border-transparent hover:border-red-200 transition-colors cursor-pointer"
@@ -453,33 +254,34 @@ export function DiscountPage() {
         }
       />
 
-      {/* Declarative Table Component with Column Config */}
+      {/* Reusable Table Component with built-in isLoading */}
       <div className="space-y-0">
         <Table
           data={paginatedDiscounts}
           columns={discountColumns}
+          isLoading={isLoading}
           keyExtractor={(discount) => discount.id}
           emptyText="No discounts found matching your criteria."
         />
 
         {/* Pagination Component */}
-        <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          totalItems={filteredDiscounts.length}
-          itemsPerPage={itemsPerPage}
-          onPageChange={setCurrentPage}
-          itemLabel="discounts"
-        />
+        {!isLoading && (
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={filteredDiscounts.length}
+            itemsPerPage={itemsPerPage}
+            onPageChange={setCurrentPage}
+            itemLabel="discounts"
+          />
+        )}
       </div>
-
-
 
       {/* Delete Confirmation Modal */}
       <Modal
         isOpen={Boolean(deletingId)}
         onClose={() => setDeletingId(null)}
-        onConfirm={() => deletingId && handleDeleteDiscount(deletingId)}
+        onConfirm={handleDeleteDiscount}
         title="Delete Discount?"
         confirmText="Delete"
         confirmVariant="danger"

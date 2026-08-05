@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { formatMoney } from "@/utils/format";
 
 export interface OrderPriceSummaryCardProps {
   total?: number;
@@ -36,23 +37,23 @@ export function OrderPriceSummaryCard({
         <div className="space-y-3 text-sm">
           <div className="flex justify-between items-center text-[#6E5B53]">
             <span>Sub Total</span>
-            <span className="font-semibold text-[#3D2E28]">${displaySubtotal.toFixed(2)}</span>
+            <span className="font-semibold text-[#3D2E28]">{formatMoney(displaySubtotal)}</span>
           </div>
           {discount > 0 && (
             <div className="flex justify-between items-center text-[#6E5B53]">
               <span>Discount</span>
-              <span className="font-semibold text-[#3D2E28]">${discount.toFixed(2)}</span>
+              <span className="font-semibold text-[#3D2E28]">{formatMoney(discount)}</span>
             </div>
           )}
           {deliveryFee > 0 && (
             <div className="flex justify-between items-center text-[#6E5B53]">
               <span>Delivery fee</span>
-              <span className="font-semibold text-[#3D2E28]">${deliveryFee.toFixed(2)}</span>
+              <span className="font-semibold text-[#3D2E28]">{formatMoney(deliveryFee)}</span>
             </div>
           )}
           <div className="flex justify-between items-center text-[#6E5B53] pt-1">
             <span className="font-bold text-[#583F37]">Total Price</span>
-            <span className="font-bold text-[#583F37] text-base">${calculatedTotal.toFixed(2)}</span>
+            <span className="font-bold text-[#583F37] text-base">{formatMoney(calculatedTotal)}</span>
           </div>
         </div>
       </div>
@@ -81,4 +82,3 @@ export function OrderPriceSummaryCard({
 }
 
 export default OrderPriceSummaryCard;
-

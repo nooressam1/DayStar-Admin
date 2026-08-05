@@ -111,7 +111,7 @@ export function Navbar({
 
   return (
     <aside
-      className={`w-64 h-screen sticky top-0 bg-[#FAF5F2] border-r border-[#EAE1DA] flex flex-col justify-between p-6 select-none shrink-0 overflow-y-auto z-30 ${className}`}
+      className={`w-64 h-screen sticky top-0 bg-[#FAF5F2] border-r border-[#EAE1DA] flex flex-col justify-between p-6 select-none shrink-0 overflow-y-auto z-30 print:hidden ${className}`}
     >
       {/* Top Section */}
       <div className="flex flex-col gap-6">

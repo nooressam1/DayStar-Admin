@@ -1,10 +1,10 @@
 "use client";
 
-import { useMemo, useCallback } from "react";
-import { useSearchParams, useRouter, usePathname } from "next/navigation";
-import { FilterConfig, ProductItem } from "@/modules/shared";
+import { useMemo } from "react";
+import { FilterConfig, ProductItem, useDebounce } from "@/modules/shared";
 import { useGetProducts } from "@/app/api/hooks/useProducts";
 import { useGetCategories } from "@/app/api/hooks/useCategories";
+import { useUrlFilterState } from "@/modules/shared/hooks/useUrlFilterState";
 import { formatProductForCard } from "../utils/FormatProduct";
 import { parsePrice } from "@/utils/format";
 
@@ -16,80 +16,49 @@ export interface UseFilteredProductsOptions {
 
 const ITEMS_PER_PAGE = 12;
 
-// Default values — when a param equals its default, we strip it from the URL
-const DEFAULTS = {
-  categoryId: "",
-  badge: "All Badges",
-  price: "All Prices",
-  search: "",
-  page: "1",
-} as const;
+// ── Filter definitions for the products page ──
+const PRODUCT_FILTERS = [
+  { key: "categoryId", defaultValue: "" },
+  { key: "badge", defaultValue: "All Badges" },
+  { key: "price", defaultValue: "All Prices" },
+  { key: "search", defaultValue: "" },
+];
 
 export function useFilteredProducts(options: UseFilteredProductsOptions = {}) {
   const limit = options.itemsPerPage ?? ITEMS_PER_PAGE;
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const pathname = usePathname();
+
+  // ── Reusable URL filter state ──
+  const {
+    filterValues,
+    setFilter,
+    setPage,
+    resetFilters,
+    currentPage,
+    itemsPerPage,
+  } = useUrlFilterState({
+    filters: PRODUCT_FILTERS,
+    itemsPerPage: limit,
+  });
+
+  // ── Destructure filter values for readability ──
+  const categoryId = filterValues.categoryId;
+  const badgeFilter = filterValues.badge;
+  const priceRangeFilter = filterValues.price;
+  const searchQuery = filterValues.search;
+
+  // Debounce the search query sent to the API to avoid excessive network requests
+  const debouncedSearchQuery = useDebounce(searchQuery, 350);
 
   // ── Fetch categories from API ──
   const { data: categories = [] } = useGetCategories();
 
-  // ── Read filter values from URL search params ──
-  const categoryId = searchParams.get("categoryId") || DEFAULTS.categoryId;
-  const badgeFilter = searchParams.get("badge") || DEFAULTS.badge;
-  const priceRangeFilter = searchParams.get("price") || DEFAULTS.price;
-  const searchQuery = searchParams.get("search") || DEFAULTS.search;
-  const currentPage = parseInt(searchParams.get("page") || DEFAULTS.page, 10) || 1;
-
-  // ── Helper: update one or more params in the URL ──
-  const updateParams = useCallback(
-    (updates: Record<string, string>) => {
-      const params = new URLSearchParams(searchParams.toString());
-
-      Object.entries(updates).forEach(([key, value]) => {
-        const defaultKey = key as keyof typeof DEFAULTS;
-        if (value === DEFAULTS[defaultKey] || value === "") {
-          params.delete(key);
-        } else {
-          params.set(key, value);
-        }
-      });
-
-      const qs = params.toString();
-      router.replace(`${pathname}${qs ? `?${qs}` : ""}`, { scroll: false });
-    },
-    [searchParams, router, pathname]
-  );
-
-  // ── Individual setters that update URL params ──
-  const setCategoryId = useCallback(
-    (value: string) => updateParams({ categoryId: value, page: "1" }),
-    [updateParams]
-  );
-  const setBadgeFilter = useCallback(
-    (value: string) => updateParams({ badge: value, page: "1" }),
-    [updateParams]
-  );
-  const setPriceRangeFilter = useCallback(
-    (value: string) => updateParams({ price: value, page: "1" }),
-    [updateParams]
-  );
-  const setSearchQuery = useCallback(
-    (value: string) => updateParams({ search: value, page: "1" }),
-    [updateParams]
-  );
-  const setPage = useCallback(
-    (page: number) => updateParams({ page: String(page) }),
-    [updateParams]
-  );
-
-  // ── Fetch products from API (pass categoryId, page, limit) ──
+  // ── Fetch products from API (pass categoryId, page, limit, and debounced search) ──
   const { data: response, isLoading, isError } = useGetProducts({
     ...(categoryId ? { categoryId } : {}),
-    ...(searchQuery ? { search: searchQuery } : {}),
+    ...(debouncedSearchQuery ? { search: debouncedSearchQuery } : {}),
     includeInactive: options.includeInactive ?? true,
     page: currentPage,
-    limit,
+    limit: itemsPerPage,
   });
 
   const rawProducts = response?.items || [];
@@ -101,14 +70,16 @@ export function useFilteredProducts(options: UseFilteredProductsOptions = {}) {
     return rawProducts.map(formatProductForCard);
   }, [options.customProducts, rawProducts]);
 
-  // ── Client-side filtering ──
+  // ── Instant Client-side local filtering ──
   const filteredProducts = useMemo(() => {
+    const query = (searchQuery || "").trim().toLowerCase();
+
     return productsList.filter((p) => {
       // Filter by category ID
       if (categoryId && p.category_id !== categoryId) {
         return false;
       }
-      if (badgeFilter !== DEFAULTS.badge && p.badge?.type !== badgeFilter) {
+      if (badgeFilter !== "All Badges" && p.badge?.type !== badgeFilter) {
         return false;
       }
       const priceNum = parsePrice(p.price);
@@ -124,21 +95,20 @@ export function useFilteredProducts(options: UseFilteredProductsOptions = {}) {
       if (priceRangeFilter === "over_250" && priceNum <= 250) {
         return false;
       }
-      if (
-        searchQuery &&
-        !p.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
-        !p.sku.toLowerCase().includes(searchQuery.toLowerCase())
-      ) {
-        return false;
+
+      // Instant local search matching across name, sku, category, and description
+      if (query) {
+        const matchName = p.name ? p.name.toLowerCase().includes(query) : false;
+        const matchSku = p.sku ? p.sku.toLowerCase().includes(query) : false;
+        const matchCategory = p.category ? p.category.toLowerCase().includes(query) : false;
+
+        if (!matchName && !matchSku && !matchCategory) {
+          return false;
+        }
       }
       return true;
     });
   }, [productsList, categoryId, badgeFilter, priceRangeFilter, searchQuery]);
-
-  // ── Reset all filters (clears URL params) ──
-  const resetFilters = useCallback(() => {
-    router.replace(pathname, { scroll: false });
-  }, [router, pathname]);
 
   // ── Build category options dynamically from API data ──
   const categoryOptions = useMemo(() => {
@@ -156,14 +126,14 @@ export function useFilteredProducts(options: UseFilteredProductsOptions = {}) {
         key: "categoryId",
         type: "select",
         value: categoryId,
-        onChange: setCategoryId,
+        onChange: (val: string) => setFilter("categoryId", val),
         options: categoryOptions,
       },
       {
         key: "badge",
         type: "select",
         value: badgeFilter,
-        onChange: setBadgeFilter,
+        onChange: (val: string) => setFilter("badge", val),
         options: [
           { label: "All Badges", value: "All Badges" },
           { label: "10% Sale / On Sale", value: "on_sale" },
@@ -176,7 +146,7 @@ export function useFilteredProducts(options: UseFilteredProductsOptions = {}) {
         key: "priceRange",
         type: "select",
         value: priceRangeFilter,
-        onChange: setPriceRangeFilter,
+        onChange: (val: string) => setFilter("price", val),
         options: [
           { label: "All Prices", value: "All Prices" },
           { label: "Under $150", value: "under_150" },
@@ -188,22 +158,19 @@ export function useFilteredProducts(options: UseFilteredProductsOptions = {}) {
         key: "search",
         type: "search",
         value: searchQuery,
-        onChange: setSearchQuery,
+        onChange: (val: string) => setFilter("search", val),
         placeholder: "Search products...",
       },
     ],
-    [categoryId, categoryOptions, badgeFilter, priceRangeFilter, searchQuery, setCategoryId, setBadgeFilter, setPriceRangeFilter, setSearchQuery]
+    [categoryId, categoryOptions, badgeFilter, priceRangeFilter, searchQuery, setFilter]
   );
 
   return {
+    setFilter,
     categoryId,
-    setCategoryId,
     badgeFilter,
-    setBadgeFilter,
     priceRangeFilter,
-    setPriceRangeFilter,
     searchQuery,
-    setSearchQuery,
     resetFilters,
     filteredProducts,
     productsList,
@@ -215,7 +182,7 @@ export function useFilteredProducts(options: UseFilteredProductsOptions = {}) {
     currentPage,
     totalPages,
     totalItems,
-    itemsPerPage: limit,
-    setPage,
+    itemsPerPage,
+    setPage: (page: number | string) => setFilter("page", page),
   };
 }

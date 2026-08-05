@@ -73,8 +73,11 @@ export function AddProductPage({ productId: propProductId }: AddProductPageProps
     removeVariant,
   } = useAddProductForm();
 
+  const loadedProductIdRef = React.useRef<string | null>(null);
+
   useEffect(() => {
-    if (isEditMode && existingProduct) {
+    if (isEditMode && existingProduct && loadedProductIdRef.current !== existingProduct.id) {
+      loadedProductIdRef.current = existingProduct.id;
       setFormState(mapProductToFormState(existingProduct));
     }
   }, [isEditMode, existingProduct, setFormState]);
@@ -99,7 +102,7 @@ export function AddProductPage({ productId: propProductId }: AddProductPageProps
         name: state.productName,
         description: state.description,
         slug,
-        category_id: state.category,
+        category_id: state.category && state.category.trim() ? state.category.trim() : null,
         images: state.images,
         price: parseFloat(state.regularPrice) || 0,
         is_active: state.isActive,
@@ -109,7 +112,7 @@ export function AddProductPage({ productId: propProductId }: AddProductPageProps
         concern: state.selectedConcerns,
         step_type: state.routineStep,
         variants: state.variants.map((v) => ({
-          id: v.id,
+          id: v.id && /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(v.id) ? v.id : undefined,
           size: v.size,
           sku: v.sku,
           stock: Number(v.stock) || 0,
@@ -236,8 +239,12 @@ export function AddProductPage({ productId: propProductId }: AddProductPageProps
           />
 
           <MediaUpload
+            label="Product Images"
             images={state.images}
             onChange={(imgs) => setField("images", imgs)}
+            multiple={true}
+            maxFiles={3}
+            helperText="Upload up to 3 product images (SVG, PNG, JPG or GIF)"
           />
 
           <ProductVariantsCard
@@ -245,6 +252,7 @@ export function AddProductPage({ productId: propProductId }: AddProductPageProps
             onAddVariantRow={addVariant}
             onUpdateVariant={updateVariant}
             onRemoveVariant={removeVariant}
+            hideAddVariant={isEditMode}
           />
         </div>
 

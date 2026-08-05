@@ -12,6 +12,7 @@ export interface MediaUploadProps {
   onRemoveImage?: (index: number) => void;
   title?: string;
   multiple?: boolean;
+  maxFiles?: number;
   accept?: string;
   helperText?: string;
   layout?: "card" | "dropzone" | "compact";
@@ -28,6 +29,7 @@ export function MediaUpload({
   onAddImage,
   onRemoveImage,
   multiple = false,
+  maxFiles = 3,
   accept = "image/jpeg,image/png,image/webp,image/gif",
   helperText = "SVG, PNG, JPG or GIF (max. 800×400px)",
   layout = "card",
@@ -48,10 +50,12 @@ export function MediaUpload({
   const handleFiles = (files: FileList | null) => {
     if (!files || files.length === 0) return;
 
-    const newUrls: string[] = [];
-    Array.from(files).forEach((file) => {
-      newUrls.push(URL.createObjectURL(file));
-    });
+    const limit = multiple ? maxFiles : 1;
+    const remainingSlots = limit - images.length;
+    if (remainingSlots <= 0) return;
+
+    const filesToProcess = Array.from(files).slice(0, remainingSlots);
+    const newUrls: string[] = filesToProcess.map((file) => URL.createObjectURL(file));
 
     if (multiple) {
       const updated = [...images, ...newUrls];
@@ -101,6 +105,8 @@ export function MediaUpload({
       }
     }
   };
+
+  const isMaxReached = multiple && maxFiles ? images.length >= maxFiles : false;
 
   // Compact layout (e.g. single avatar / thumbnail upload box)
   if (layout === "compact") {
@@ -182,14 +188,31 @@ export function MediaUpload({
     <div
       className={`bg-white rounded-2xl border border-[#E9E3DE] p-6 shadow-xs space-y-4 ${className}`}
     >
-      {label && <h2 className="text-base font-bold text-[#583F37]">{label}</h2>}
+      <div className="flex items-center justify-between">
+        {label && <h2 className="text-base font-bold text-[#583F37]">{label}</h2>}
+        {multiple && maxFiles && (
+          <span className="text-xs font-semibold text-[#8A756C] bg-[#FAF6F4] px-2.5 py-1 rounded-full border border-[#E9E3DE]">
+            {images.length} / {maxFiles} images
+          </span>
+        )}
+      </div>
 
       {/* Upload Dropzone */}
       <div
-        onClick={() => fileInputRef.current?.click()}
-        onDrop={handleDrop}
+        onClick={() => !isMaxReached && fileInputRef.current?.click()}
+        onDrop={(e) => {
+          if (isMaxReached) {
+            e.preventDefault();
+            return;
+          }
+          handleDrop(e);
+        }}
         onDragOver={handleDragOver}
-        className="border-2 border-dashed border-[#D1C7BD] hover:border-[#004D5A] bg-[#FAF6F4]/40 hover:bg-[#FAF6F4] rounded-2xl p-8 text-center transition-colors cursor-pointer flex flex-col items-center justify-center gap-2"
+        className={`border-2 border-dashed rounded-2xl p-8 text-center transition-colors flex flex-col items-center justify-center gap-2 ${
+          isMaxReached
+            ? "border-[#E9E3DE] bg-[#FAF6F4]/20 cursor-not-allowed opacity-75"
+            : "border-[#D1C7BD] hover:border-[#004D5A] bg-[#FAF6F4]/40 hover:bg-[#FAF6F4] cursor-pointer"
+        }`}
       >
         <input
           type="file"
@@ -197,9 +220,14 @@ export function MediaUpload({
           onChange={handleInputChange}
           accept={accept}
           multiple={multiple}
+          disabled={isMaxReached}
           className="hidden"
         />
-        <div className="w-12 h-12 rounded-full bg-[#004D5A] text-white flex items-center justify-center shadow-xs mb-1">
+        <div
+          className={`w-12 h-12 rounded-full text-white flex items-center justify-center shadow-xs mb-1 ${
+            isMaxReached ? "bg-[#8A756C]" : "bg-[#004D5A]"
+          }`}
+        >
           <svg
             className="w-6 h-6"
             fill="none"
@@ -215,15 +243,19 @@ export function MediaUpload({
           </svg>
         </div>
         <p className="text-sm font-semibold text-[#583F37]">
-          Click to upload or drag and drop
+          {isMaxReached
+            ? `Maximum ${maxFiles} images reached`
+            : "Click to upload or drag and drop"}
         </p>
-        <p className="text-xs text-[#8A756C]">{helperText}</p>
+        <p className="text-xs text-[#8A756C]">
+          {isMaxReached ? "Remove an image to upload a new one" : helperText}
+        </p>
       </div>
 
       {/* Media Thumbnails Strip */}
       {images.length > 0 && (
         <div className="flex items-center gap-3 pt-2 flex-wrap">
-          {multiple && (
+          {multiple && (!maxFiles || images.length < maxFiles) && (
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
@@ -258,3 +290,4 @@ export function MediaUpload({
 }
 
 export default MediaUpload;
+

@@ -1,123 +1,60 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { PageHeader, Modal, Button } from "@/modules/shared";
 import { OrderedItemsTable } from "../components/OrderedItemsTable";
 import { OrderPriceSummaryCard } from "../components/OrderPriceSummaryCard";
 import { OrderCustomerDetailsCard } from "../components/OrderCustomerDetailsCard";
-import { OrderWithDetails, OrderItem, Address, Profile } from "@/types";
-
-const sampleDBItems: OrderItem[] = [
-  {
-    id: "item-1",
-    order_id: "ord-88421",
-    variant_id: "var-101",
-    product_name: "Apex Pro Keyboard",
-    sku: "KB-APX-PRO",
-    unit_price_snapshot: 199.99,
-    quantity: 1,
-    image: "https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=150&auto=format&fit=crop&q=80",
-  },
-  {
-    id: "item-2",
-    order_id: "ord-88421",
-    variant_id: "var-102",
-    product_name: "QcK Heavy XL Mousepad",
-    sku: "MP-QCK-XL",
-    unit_price_snapshot: 29.99,
-    quantity: 1,
-    image: "https://images.unsplash.com/photo-1615663245857-ac93bb7c39e7?w=150&auto=format&fit=crop&q=80",
-  },
-  {
-    id: "item-3",
-    order_id: "ord-88421",
-    variant_id: "var-103",
-    product_name: "Coiled USB-C Cable",
-    sku: "CB-CLD-BLK",
-    unit_price_snapshot: 35.00,
-    quantity: 1,
-    image: "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=150&auto=format&fit=crop&q=80",
-  },
-];
-
-const sampleAddress: Address = {
-  id: "addr-101",
-  user_id: "usr-201",
-  label: "Office",
-  street: "123 Industrial Way, Suite 400",
-  city: "San Francisco",
-  governorate: "CA",
-  postal_code: "94103",
-  country: "United States",
-  created_at: "2023-01-15T00:00:00Z",
-  is_default: true,
-};
-
-const sampleUser: Profile = {
-  id: "usr-201",
-  username: "janedoe",
-  role: "customer",
-  email: "jane.doe@example.com",
-  full_name: "Jane Doe",
-};
-
-const mockDatabaseOrders: Record<string, OrderWithDetails> = {
-  "ORD-88210": {
-    id: "ord-88421",
-    order_number: 88210,
-    user_id: "usr-201",
-    address_id: "addr-101",
-    status: "Shipped",
-    total: 283.00,
-    created_at: "2023-10-24T14:14:00Z",
-    full_name: "Jane Doe",
-    phone_number: "+1 (555) 0123-4567",
-    subtotal: 264.98,
-    discount: 20.00,
-    delivery_fee: 38.02,
-    payment_method: "Cash on Delivery",
-    items: sampleDBItems,
-    address: sampleAddress,
-    user: sampleUser,
-  },
-};
-
-const defaultDBOrder: OrderWithDetails = {
-  id: "ord-88421",
-  order_number: 98421,
-  user_id: "usr-201",
-  address_id: "addr-101",
-  status: "Shipped",
-  total: 283.00,
-  created_at: "2023-10-24T14:14:00Z",
-  full_name: "Jane Doe",
-  phone_number: "+1 (555) 0123-4567",
-  subtotal: 264.98,
-  discount: 20.00,
-  delivery_fee: 38.02,
-  payment_method: "Cash on Delivery",
-  items: sampleDBItems,
-  address: sampleAddress,
-  user: sampleUser,
-};
+import { OrderWithDetails } from "@/types";
+import { useGetAdminOrder } from "@/app/api/hooks/useOrders";
 
 export function OrderDetailPage({ orderId: propOrderId }: { orderId?: string }) {
   const params = useParams();
-  const rawId = propOrderId || (params?.id as string) || "ORD-88210";
+  const rawId = propOrderId || (params?.id as string) || "";
   const cleanId = rawId.replace("%23", "").replace("#", "");
 
-  const orderData: OrderWithDetails = mockDatabaseOrders[cleanId] || {
-    ...defaultDBOrder,
-    id: cleanId,
-    order_number: parseInt(cleanId.replace(/\D/g, ""), 10) || 98421,
-  };
+  const { data: fetchedOrder, isLoading, isError, error, refetch } = useGetAdminOrder(cleanId);
 
   const [showRefundModal, setShowRefundModal] = useState(false);
   const [refundReason, setRefundReason] = useState("");
-  const [currentStatus, setCurrentStatus] = useState<string>(orderData.status || "Shipped");
+  const [currentStatus, setCurrentStatus] = useState<string>("Pending");
 
+  useEffect(() => {
+    if (fetchedOrder?.status) {
+      setCurrentStatus(fetchedOrder.status);
+    }
+  }, [fetchedOrder]);
+
+  if (isLoading) {
+    return (
+      <div className="py-24 text-center text-[#8A756C] font-medium">
+        Loading order details...
+      </div>
+    );
+  }
+
+  if (isError || !fetchedOrder) {
+    return (
+      <div className="py-12 px-4 max-w-2xl mx-auto text-center space-y-4">
+        <div className="p-6 bg-red-50 border border-red-200 text-red-700 rounded-2xl shadow-xs">
+          <h2 className="font-bold text-lg">Order Not Found</h2>
+          <p className="text-sm mt-1">{(error as any)?.message || "Could not fetch order details from backend."}</p>
+          <div className="mt-4 flex justify-center gap-3">
+            <Link href="/order" className="px-4 py-2 bg-stone-200 text-stone-800 text-xs font-semibold rounded-xl hover:bg-stone-300">
+              Back to Orders
+            </Link>
+            <button onClick={() => refetch()} className="px-4 py-2 bg-red-600 text-white text-xs font-semibold rounded-xl hover:bg-red-700">
+              Try Again
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const orderData: OrderWithDetails = fetchedOrder;
   const isRefunded = currentStatus === "Cancelled" || currentStatus === "Refunded";
 
   const handlePrintPackingSlip = () => {
@@ -129,15 +66,23 @@ export function OrderDetailPage({ orderId: propOrderId }: { orderId?: string }) 
     setShowRefundModal(false);
   };
 
-  const formattedDate = new Date(orderData.created_at).toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  const formattedDate = orderData.created_at
+    ? new Date(orderData.created_at).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    })
+    : "N/A";
 
-  const displayOrderNumber = `#ORD-${orderData.order_number}`;
+  const displayOrderNumber = `#${orderData.order_number}`;
+
+  const calculatedSubtotal = orderData.items && orderData.items.length > 0
+    ? orderData.items.reduce((sum, item) => sum + ((item.unit_price_snapshot || 0) * (item.quantity || 1)), 0)
+    : orderData.total;
+
+  const discountVal = (orderData as any).discount_amount ?? orderData.discount ?? 0;
 
   return (
     <div className="flex flex-col gap-6 pb-12">
@@ -147,13 +92,12 @@ export function OrderDetailPage({ orderId: propOrderId }: { orderId?: string }) 
           <div className="flex items-center flex-wrap gap-3">
             <span>Order {displayOrderNumber}</span>
             <span
-              className={`px-5 py-1 text-xs sm:text-sm font-medium rounded-full ${
-                currentStatus === "Refunded" || currentStatus === "Cancelled"
-                  ? "bg-red-100 text-red-800"
-                  : currentStatus === "Shipped" || currentStatus === "Delivered"
+              className={`px-5 py-1 text-xs sm:text-sm font-medium rounded-full ${currentStatus === "Refunded" || currentStatus === "Cancelled"
+                ? "bg-red-100 text-red-800"
+                : currentStatus === "Shipped" || currentStatus === "Delivered"
                   ? "bg-[#50E3C2] text-[#044E35]"
                   : "bg-amber-100 text-amber-800"
-              }`}
+                }`}
             >
               {currentStatus}
             </span>
@@ -215,8 +159,8 @@ export function OrderDetailPage({ orderId: propOrderId }: { orderId?: string }) 
         {/* Right Section: Price & Payment Summary Component */}
         <OrderPriceSummaryCard
           total={orderData.total}
-          subtotal={orderData.subtotal}
-          discount={orderData.discount}
+          subtotal={orderData.subtotal || calculatedSubtotal}
+          discount={discountVal}
           deliveryFee={orderData.delivery_fee}
           paymentMethodText={orderData.payment_method}
           status={currentStatus}

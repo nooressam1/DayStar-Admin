@@ -1,10 +1,14 @@
 import React from "react";
 import { OrderItem } from "@/types";
+import { formatMoney } from "@/utils/format";
 
 export interface OrderedItemsTableProps {
   items: OrderItem[];
   className?: string;
 }
+
+const DEFAULT_PRODUCT_IMAGE =
+  "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=150&auto=format&fit=crop&q=80";
 
 export function OrderedItemsTable({ items, className = "" }: OrderedItemsTableProps) {
   return (
@@ -42,7 +46,7 @@ export function OrderedItemsTable({ items, className = "" }: OrderedItemsTablePr
               const productName = item.product_name || (item as any).name || "Item";
               const itemPrice = item.unit_price_snapshot ?? (item as any).price ?? 0;
               const itemSku = item.sku || (item as any).sku || "N/A";
-              const itemImage = item.image || (item as any).image || "https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=150&auto=format&fit=crop&q=80";
+              const itemImage = item.image || DEFAULT_PRODUCT_IMAGE;
 
               return (
                 <tr key={item.id} className="hover:bg-[#FAF6F4]/50 transition-colors">
@@ -52,7 +56,10 @@ export function OrderedItemsTable({ items, className = "" }: OrderedItemsTablePr
                       <img
                         src={itemImage}
                         alt={productName}
-                        className="w-12 h-12 object-cover rounded-xl border border-[#E9E3DE] shrink-0"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = DEFAULT_PRODUCT_IMAGE;
+                        }}
+                        className="w-12 h-12 object-cover rounded-xl border border-[#E9E3DE] shrink-0 bg-[#FAF6F4]"
                       />
                       <div>
                         <p className="text-sm font-semibold text-[#583F37] leading-snug">
@@ -72,7 +79,7 @@ export function OrderedItemsTable({ items, className = "" }: OrderedItemsTablePr
 
                   {/* Price Cell */}
                   <td className="px-6 py-4 text-sm text-[#583F37] font-semibold whitespace-nowrap">
-                    ${itemPrice.toFixed(2)}
+                    {formatMoney(itemPrice)}
                   </td>
 
                   {/* Quantity Cell */}
@@ -82,7 +89,7 @@ export function OrderedItemsTable({ items, className = "" }: OrderedItemsTablePr
 
                   {/* Total Cell */}
                   <td className="px-6 py-4 text-sm font-bold text-[#583F37] text-right whitespace-nowrap">
-                    ${(itemPrice * item.quantity).toFixed(2)}
+                    {formatMoney(itemPrice * item.quantity)}
                   </td>
                 </tr>
               );

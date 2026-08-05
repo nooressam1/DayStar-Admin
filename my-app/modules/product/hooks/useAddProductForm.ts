@@ -132,6 +132,8 @@ export function useAddProductForm(overrideInitialState?: Partial<AddProductState
 
     if (!state.images || state.images.length === 0) {
       errors.images = "At least one product image is required.";
+    } else if (state.images.length > 3) {
+      errors.images = "Maximum 3 product images allowed.";
     }
     if (!state.productName.trim()) {
       errors.productName = "Product name is required.";
@@ -228,7 +230,7 @@ export function mapProductToFormState(product: any): Partial<AddProductState> {
   const regularPrice = priceVal > 500 ? (priceVal / 100).toFixed(2) : priceVal.toFixed(2);
 
   return {
-    images: Array.isArray(product.images) && product.images.length > 0 ? product.images : [],
+    images: Array.isArray(product.images) && product.images.length > 0 ? product.images.slice(0, 3) : [],
     productName: product.name || "",
     description: product.description || "",
     selectedSkinTypes: Array.isArray(product.skin_type) ? product.skin_type : [],
@@ -245,11 +247,11 @@ export function mapProductToFormState(product: any): Partial<AddProductState> {
     variants:
       Array.isArray(product.variants) && product.variants.length > 0
         ? product.variants.map((v: any) => ({
-            id: v.id,
-            size: v.size || "",
-            sku: v.sku || "",
-            stock: v.stock ?? 0,
-          }))
+          id: v.id,
+          size: v.size || "",
+          sku: v.sku || "",
+          stock: v.stock ?? 0,
+        }))
         : [{ id: `var-${Date.now()}`, size: "Standard", sku: `SKU-${product.id || '1'}`, stock: 0 }],
   };
 }

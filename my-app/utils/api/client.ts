@@ -1,7 +1,7 @@
 import { createClient } from "@/utils/supabase/client";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3002";
-const DEFAULT_TIMEOUT = Number(process.env.NEXT_PUBLIC_API_TIMEOUT) || 10000;
+const DEFAULT_TIMEOUT = Number(process.env.NEXT_PUBLIC_API_TIMEOUT) || 30000;
 
 export interface ApiResponseWrapper<T> {
   data: T;

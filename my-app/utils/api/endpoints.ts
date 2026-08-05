@@ -9,7 +9,9 @@ export const ENDPOINTS = {
   },
   DISCOUNT: {
     LIST: "/discount",
+    CREATE: "/discount",
     GET: (code: string) => `/discount/${code}`,
+    DELETE: (id: string) => `/discount/${id}`,
   },
   CATEGORY: {
     LIST: "/category",
@@ -17,6 +19,8 @@ export const ENDPOINTS = {
   },
   ORDER: {
     LIST: "/orders",
+    ADMIN_LIST: "/orders/admin/all",
+    ADMIN_GET: (id: string) => `/orders/admin/${id}`,
     GET: (id: string) => `/orders/${id}`,
     CHECKOUT: "/orders/checkout",
     CANCEL: (orderId: string) => `/orders/${orderId}/cancel`,

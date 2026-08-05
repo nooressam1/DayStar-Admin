@@ -35,18 +35,18 @@ export function OrderCustomerDetailsCard({
   className = "",
 }: OrderCustomerDetailsCardProps) {
   const name = user?.full_name || fullName || customer?.name || "Customer";
-  const email = user?.email || customer?.email || "N/A";
+  const email = user?.email || "N/A";
   const phone = phoneNumber || customer?.phone || "N/A";
 
   const initials =
     user?.avatar_url
       ? undefined
       : name
-          .split(" ")
-          .map((n) => n[0])
-          .join("")
-          .toUpperCase()
-          .slice(0, 2) || "CU";
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2) || "CU";
 
   const street = address?.street || shippingAddress?.street || "No street address specified";
   const cityStateZip = address

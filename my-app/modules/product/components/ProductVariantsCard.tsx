@@ -5,9 +5,10 @@ import type { ProductVariant } from "@/types";
 
 export interface ProductVariantsCardProps {
   variants: ProductVariant[];
-  onAddVariantRow: () => void;
+  onAddVariantRow?: () => void;
   onUpdateVariant: (id: string, field: keyof ProductVariant, value: ProductVariant[keyof ProductVariant]) => void;
   onRemoveVariant: (id: string) => void;
+  hideAddVariant?: boolean;
   title?: string;
   className?: string;
 }
@@ -17,6 +18,7 @@ export function ProductVariantsCard({
   onAddVariantRow,
   onUpdateVariant,
   onRemoveVariant,
+  hideAddVariant = false,
   title = "Product Variants (Sizes & Stock)",
   className = "",
 }: ProductVariantsCardProps) {
@@ -27,13 +29,15 @@ export function ProductVariantsCard({
           <h2 className="text-base font-bold text-[#583F37]">{title}</h2>
           <p className="text-xs text-[#7A6860] mt-0.5">Configure different sizes and stock counts.</p>
         </div>
-        <button
-          type="button"
-          onClick={onAddVariantRow}
-          className="px-3.5 py-2 bg-[#FAF5F2] hover:bg-[#F3ECE6] text-[#583F37] font-semibold text-xs rounded-xl border border-[#E9E3DE] transition-colors cursor-pointer flex items-center gap-1"
-        >
-          + Add Variant Size
-        </button>
+        {!hideAddVariant && onAddVariantRow && (
+          <button
+            type="button"
+            onClick={onAddVariantRow}
+            className="px-3.5 py-2 bg-[#FAF5F2] hover:bg-[#F3ECE6] text-[#583F37] font-semibold text-xs rounded-xl border border-[#E9E3DE] transition-colors cursor-pointer flex items-center gap-1"
+          >
+            + Add Variant Size
+          </button>
+        )}
       </div>
 
       <div className="space-y-3">

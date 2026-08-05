@@ -1,12 +1,14 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { useDebounce } from "../../hooks/useDebounce";
 
 export interface FilterSearchProps
   extends React.InputHTMLAttributes<HTMLInputElement> {
   value?: string;
   onSearchChange?: (query: string) => void;
   containerClassName?: string;
+  debounceMs?: number;
 }
 
 export function FilterSearch({
@@ -16,11 +18,27 @@ export function FilterSearch({
   placeholder = "Search...",
   className = "",
   containerClassName = "",
+  debounceMs = 350,
   ...props
 }: FilterSearchProps) {
+  const [localValue, setLocalValue] = useState<string>(value ?? "");
+  const debouncedValue = useDebounce(localValue, debounceMs);
+
+  // Synchronize localValue when external prop changes (e.g. filter reset or URL change)
+  useEffect(() => {
+    setLocalValue(value ?? "");
+  }, [value]);
+
+  // Trigger search change callback only when debounced value changes
+  useEffect(() => {
+    if (debouncedValue !== (value ?? "")) {
+      onSearchChange?.(debouncedValue);
+    }
+  }, [debouncedValue, onSearchChange, value]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setLocalValue(e.target.value);
     onChange?.(e);
-    onSearchChange?.(e.target.value);
   };
 
   return (
@@ -42,7 +60,7 @@ export function FilterSearch({
       </div>
       <input
         type="text"
-        value={value ?? ""}
+        value={localValue}
         onChange={handleChange}
         placeholder={placeholder}
         className={`w-full bg-[#F9F5F2] border border-[#EBE3DE] text-[#4A3831] text-sm pl-9 pr-4 py-2 rounded-full focus:outline-none focus:ring-1 focus:ring-[#754E45] placeholder-[#A08D84] font-medium shadow-2xs ${className}`}
