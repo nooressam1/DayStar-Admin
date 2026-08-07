@@ -111,6 +111,21 @@ export function Table<T>({
                         cellContent = (row as any)[col.key];
                       }
 
+                      // Safety guard: prevent rendering raw objects (e.g. {id, name})
+                      // which causes React Minified Error #31
+                      if (
+                        cellContent !== null &&
+                        cellContent !== undefined &&
+                        typeof cellContent === "object" &&
+                        !React.isValidElement(cellContent) &&
+                        !Array.isArray(cellContent)
+                      ) {
+                        const obj = cellContent as unknown as Record<string, unknown>;
+                        cellContent = String(
+                          obj.name ?? obj.label ?? obj.title ?? JSON.stringify(obj)
+                        );
+                      }
+
                       return (
                         <TableCell
                           key={col.key}

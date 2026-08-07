@@ -9,6 +9,7 @@ import { useGetAdminOrders } from "@/app/api/hooks/useOrders";
 import { Order } from "@/types";
 import { OrderStatus } from "@/enums";
 import { formatMoney } from "@/utils/format";
+import { ORDER_STATUS_OPTIONS } from "../constants/orderFilters";
 
 // ── Order filter definitions ──
 const ORDER_FILTERS = [
@@ -163,14 +164,7 @@ export function OrderPage() {
       type: "select",
       value: statusFilter,
       onChange: (val: string) => setFilter("status", val),
-      options: [
-        { label: "All Statuses", value: "All Statuses" },
-        { label: "Pending", value: OrderStatus.PENDING },
-        { label: "Processing", value: OrderStatus.PROCESSING },
-        { label: "Shipped", value: OrderStatus.SHIPPED },
-        { label: "Delivered", value: OrderStatus.DELIVERED },
-        { label: "Cancelled", value: OrderStatus.CANCELLED },
-      ],
+      options: ORDER_STATUS_OPTIONS,
     },
     {
       key: "search",

@@ -20,3 +20,4 @@ export * from "./hooks/useSelectMode";
 export * from "./hooks/useBulkEditForm";
 export * from "./utils/FormatProduct";
 export * from "./utils/csv";
+export * from "./constants/productFilters";

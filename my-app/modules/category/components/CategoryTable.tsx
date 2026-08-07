@@ -13,6 +13,7 @@ export interface CategoryTableProps {
   onPageChange: (page: number) => void;
   onEdit: (category: CategoryRecord) => void;
   onDelete: (id: string) => void;
+  isLoading?: boolean;
   className?: string;
 }
 
@@ -25,6 +26,7 @@ export function CategoryTable({
   onPageChange,
   onEdit,
   onDelete,
+  isLoading = false,
   className = "",
 }: CategoryTableProps) {
   const categoryColumns: ColumnConfig<CategoryRecord>[] = [
@@ -35,8 +37,8 @@ export function CategoryTable({
         <div className="flex items-center gap-3.5">
           <img
             src={
-              category.thumbnail ||
               category.photo ||
+
               "https://images.unsplash.com/photo-1550009158-9ebf69173e03?w=150&auto=format&fit=crop&q=80"
             }
             alt={category.name}
@@ -47,35 +49,44 @@ export function CategoryTable({
       ),
     },
     {
-      key: "description",
-      header: "DESCRIPTION",
+      key: "slug",
+      header: "SLUG",
       accessor: (category) => (
-        <span className="text-[#8A756C] max-w-xs truncate block">
-          {category.description || "—"}
+        <span className="font-mono text-xs px-2.5 py-1 rounded-md bg-[#FAF5F2] border border-[#E9E3DE] text-[#583F37]">
+          {category.slug || "—"}
         </span>
       ),
     },
     {
-      key: "itemCount",
-      header: "PRODUCTS",
-      accessor: (category) => (
-        <span className="font-semibold text-[#3D2E28]">
-          {category.itemCount || 0} items
-        </span>
-      ),
+      key: "status",
+      header: "STATUS",
+      accessor: (category: any) => {
+        const status = category.status || "Active";
+        return (
+          <span
+            className={`inline-block text-xs font-semibold px-3 py-1 rounded-full ${
+              status === "Active"
+                ? "bg-[#50E3C2]/20 text-[#044E35] border border-[#50E3C2]/40"
+                : "bg-stone-100 text-stone-600 border border-stone-200"
+            }`}
+          >
+            {status}
+          </span>
+        );
+      },
     },
     {
-      key: "visibility",
-      header: "VISIBILITY",
+      key: "created_at",
+      header: "CREATED AT",
       accessor: (category) => (
-        <span
-          className={`inline-block text-xs font-semibold px-3 py-1 rounded-full ${
-            category.isVisible ?? true
-              ? "bg-[#50E3C2]/20 text-[#044E35] border border-[#50E3C2]/40"
-              : "bg-stone-100 text-stone-600 border border-stone-200"
-          }`}
-        >
-          {category.isVisible ?? true ? "Visible" : "Hidden"}
+        <span className="text-xs text-[#8A756C]">
+          {category.created_at
+            ? new Date(category.created_at).toLocaleDateString("en-US", {
+              year: "numeric",
+              month: "short",
+              day: "numeric",
+            })
+            : "—"}
         </span>
       ),
     },
@@ -125,19 +136,22 @@ export function CategoryTable({
       <Table
         data={categories}
         columns={categoryColumns}
+        isLoading={isLoading}
         keyExtractor={(category) => category.id}
         emptyText="No categories found matching your search."
       />
 
       {/* Pagination */}
-      <Pagination
-        currentPage={currentPage}
-        totalPages={totalPages}
-        totalItems={totalItems}
-        itemsPerPage={itemsPerPage}
-        onPageChange={onPageChange}
-        itemLabel="categories"
-      />
+      {!isLoading && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={totalItems}
+          itemsPerPage={itemsPerPage}
+          onPageChange={onPageChange}
+          itemLabel="categories"
+        />
+      )}
     </div>
   );
 }

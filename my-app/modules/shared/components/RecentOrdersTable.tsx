@@ -20,41 +20,10 @@ export interface RecentOrdersTableProps {
   className?: string;
 }
 
-const defaultOrders: RecentOrderItem[] = [
-  {
-    id: "#ORD-88210",
-    customerName: "Jane Doe",
-    customerInitials: "JD",
-    status: OrderStatus.SHIPPED,
-    amount: "$1,240.00",
-  },
-  {
-    id: "#ORD-88209",
-    customerName: "Marcus Smith",
-    customerInitials: "MS",
-    status: OrderStatus.PROCESSING,
-    amount: "$320.50",
-  },
-  {
-    id: "#ORD-88208",
-    customerName: "Laura Reed",
-    customerInitials: "LR",
-    status: OrderStatus.PENDING,
-    amount: "$89.00",
-  },
-  {
-    id: "#ORD-88207",
-    customerName: "Chris Kim",
-    customerInitials: "CK",
-    status: OrderStatus.SHIPPED,
-    amount: "$2,100.99",
-  },
-];
-
 export function RecentOrdersTable({
   title = "Recent Orders",
   viewAllHref = "/order",
-  orders = defaultOrders,
+  orders = [],
   className = "",
 }: RecentOrdersTableProps) {
   const getStatusBadge = (status: OrderStatus) => {

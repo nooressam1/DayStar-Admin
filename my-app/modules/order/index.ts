@@ -6,4 +6,5 @@ export { OrderCustomerDetailsCard } from "./components/OrderCustomerDetailsCard"
 export type { OrderCustomerDetailsCardProps } from "./components/OrderCustomerDetailsCard";
 export { OrderPage } from "./pages/OrderPage";
 export { OrderDetailPage } from "./pages/OrderDetailPage";
+export * from "./constants/orderFilters";
 

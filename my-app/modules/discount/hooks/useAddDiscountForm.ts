@@ -2,14 +2,13 @@
 
 import { useReducer, useCallback } from "react";
 import { DiscountType, DiscountMinRequirement } from "@/enums";
-import { isDiscountCodeTaken, isDiscountTitleTaken } from "../utils/discountStorage";
+import { isDiscountCodeTaken } from "../utils/discountStorage";
 import { DiscountRecord } from "../pages/DiscountPage";
 
 // ── State ──────────────────────────────────────────────
 
 export interface AddDiscountState {
   code: string;
-  title: string;
   discountType: DiscountType;
   value: string;
   isActive: boolean;
@@ -21,7 +20,6 @@ export interface AddDiscountState {
 
 const initialState: AddDiscountState = {
   code: "SUMMER-SALE-20",
-  title: "",
   discountType: DiscountType.PERCENTAGE,
   value: "20",
   isActive: true,
@@ -78,7 +76,6 @@ function addDiscountReducer(state: AddDiscountState, action: AddDiscountAction):
 
 export interface DiscountFormErrors {
   code?: string;
-  title?: string;
   value?: string;
   minRequirement?: string;
   startDate?: string;
@@ -123,9 +120,6 @@ export function useAddDiscountForm(overrideInitialState?: Partial<AddDiscountSta
       errors.code = "This discount code already exists. Discount codes cannot be repeated.";
     }
 
-    if (state.title.trim() && isDiscountTitleTaken(state.title, existingDiscounts, excludeId)) {
-      errors.title = "A discount with this campaign title already exists.";
-    }
 
     if (!isFreeShipping) {
       const numVal = parseFloat(state.value);

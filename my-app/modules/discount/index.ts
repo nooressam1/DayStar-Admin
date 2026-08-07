@@ -2,3 +2,4 @@ export { MinimumRequirementSelector } from "./components/MinimumRequirementSelec
 export type { MinimumRequirementSelectorProps } from "./components/MinimumRequirementSelector";
 export { DiscountPage } from "./pages/DiscountPage";
 export { AddDiscountPage } from "./pages/AddDiscountPage";
+export * from "./constants/discountFilters";

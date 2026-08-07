@@ -1,15 +1,32 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { PageHeader, Pagination, Modal, Filter, FilterConfig, Table, ColumnConfig } from "@/modules/shared";
+import {
+  PageHeader,
+  Pagination,
+  Modal,
+  Filter,
+  FilterConfig,
+  Table,
+  ColumnConfig,
+  useUrlFilterState,
+  useDebounce,
+  usePagination,
+} from "@/modules/shared";
 import { Discount } from "@/types";
 import { fetchDiscountsApi, deleteDiscountApi } from "../utils/discountStorage";
+import { DISCOUNT_STATUS_OPTIONS, DISCOUNT_TYPE_OPTIONS } from "../constants/discountFilters";
+
+const DISCOUNT_FILTERS = [
+  { key: "status", defaultValue: "All Statuses" },
+  { key: "type", defaultValue: "All Types" },
+  { key: "search", defaultValue: "" },
+];
 
 export interface DiscountRecord extends Partial<Discount> {
   id: string;
   code: string;
-  title?: string;
   type: string;
   value: any;
   status?: "Active" | "Scheduled" | "Expired";
@@ -25,15 +42,41 @@ export function DiscountPage() {
   const router = useRouter();
   const [discounts, setDiscounts] = useState<DiscountRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState("All Statuses");
-  const [typeFilter, setTypeFilter] = useState("All Types");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const itemsPerPage = 4;
+  // ── URL-synced filter state ──
+  const {
+    filterValues,
+    setFilter,
+    currentPage,
+    itemsPerPage,
+    setPage,
+  } = useUrlFilterState({
+    filters: DISCOUNT_FILTERS,
+    itemsPerPage: 10,
+  });
 
+  const statusFilter = filterValues.status;
+  const typeFilter = filterValues.type;
+
+  // ── Local search input state with debouncing ──
+  const [localSearch, setLocalSearch] = useState(filterValues.search);
+  const debouncedSearch = useDebounce(localSearch, 350);
+
+  // Sync local search state when URL search param changes externally
+  useEffect(() => {
+    setLocalSearch(filterValues.search);
+  }, [filterValues.search]);
+
+  // Push debounced search to URL filter state
+  useEffect(() => {
+    if (debouncedSearch !== filterValues.search) {
+      setFilter("search", debouncedSearch);
+    }
+  }, [debouncedSearch, filterValues.search, setFilter]);
+
+  // ── Fetch discounts on mount ──
   useEffect(() => {
     setIsLoading(true);
     fetchDiscountsApi()
@@ -41,24 +84,26 @@ export function DiscountPage() {
       .finally(() => setIsLoading(false));
   }, []);
 
-  const filteredDiscounts = discounts.filter((d) => {
-    if (statusFilter !== "All Statuses" && d.status !== statusFilter) return false;
-    if (typeFilter !== "All Types" && d.type !== typeFilter) return false;
-    if (
-      searchQuery &&
-      !d.code.toLowerCase().includes(searchQuery.toLowerCase()) &&
-      !(d.title || "").toLowerCase().includes(searchQuery.toLowerCase())
-    ) {
-      return false;
-    }
-    return true;
-  });
+  // ── Local filtering using URL filter state and debounced search ──
+  const filteredDiscounts = useMemo(() => {
+    return discounts.filter((d) => {
+      if (statusFilter !== "All Statuses" && d.status !== statusFilter) return false;
+      if (typeFilter !== "All Types" && d.type !== typeFilter) return false;
+      if (
+        debouncedSearch &&
+        !d.code.toLowerCase().includes(debouncedSearch.toLowerCase())
+      ) {
+        return false;
+      }
+      return true;
+    });
+  }, [discounts, statusFilter, typeFilter, debouncedSearch]);
 
-  const totalPages = Math.ceil(filteredDiscounts.length / itemsPerPage) || 1;
-  const paginatedDiscounts = filteredDiscounts.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  // ── Reusable Pagination Hook ──
+  const {
+    paginatedItems: paginatedDiscounts,
+    totalPages,
+  } = usePagination(filteredDiscounts, currentPage, itemsPerPage);
 
   const handleCopyCode = (code: string) => {
     navigator.clipboard.writeText(code);
@@ -86,48 +131,32 @@ export function DiscountPage() {
     }
   };
 
-  const discountConfig: FilterConfig[] = [
-    {
-      key: "status",
-      type: "select",
-      value: statusFilter,
-      onChange: (val) => {
-        setStatusFilter(val);
-        setCurrentPage(1);
+  const discountConfig: FilterConfig[] = useMemo(
+    () => [
+      {
+        key: "status",
+        type: "select",
+        value: statusFilter,
+        onChange: (val) => setFilter("status", val),
+        options: DISCOUNT_STATUS_OPTIONS,
       },
-      options: [
-        { label: "All Statuses", value: "All Statuses" },
-        { label: "Active", value: "Active" },
-        { label: "Scheduled", value: "Scheduled" },
-        { label: "Expired", value: "Expired" },
-      ],
-    },
-    {
-      key: "type",
-      type: "select",
-      value: typeFilter,
-      onChange: (val) => {
-        setTypeFilter(val);
-        setCurrentPage(1);
+      {
+        key: "type",
+        type: "select",
+        value: typeFilter,
+        onChange: (val) => setFilter("type", val),
+        options: DISCOUNT_TYPE_OPTIONS,
       },
-      options: [
-        { label: "All Types", value: "All Types" },
-        { label: "Percentage", value: "Percentage" },
-        { label: "Fixed Amount", value: "Fixed Amount" },
-        { label: "Free Shipping", value: "Free Shipping" },
-      ],
-    },
-    {
-      key: "search",
-      type: "search",
-      value: searchQuery,
-      onChange: (val) => {
-        setSearchQuery(val);
-        setCurrentPage(1);
+      {
+        key: "search",
+        type: "search",
+        value: localSearch,
+        onChange: (val) => setLocalSearch(val),
+        placeholder: "Search discount code...",
       },
-      placeholder: "Search discount code or campaign...",
-    },
-  ];
+    ],
+    [statusFilter, typeFilter, localSearch, setFilter]
+  );
 
   const discountColumns: ColumnConfig<DiscountRecord>[] = [
     {
@@ -156,12 +185,6 @@ export function DiscountPage() {
       ),
     },
     {
-      key: "title",
-      header: "CAMPAIGN TITLE",
-      accessor: "title",
-      className: "font-semibold text-[#3D2E28]",
-    },
-    {
       key: "value",
       header: "VALUE",
       accessor: "value",
@@ -181,11 +204,11 @@ export function DiscountPage() {
       ),
     },
     {
-      key: "usage",
-      header: "USAGE",
+      key: "type",
+      header: "DISCOUNT TYPE",
       accessor: (discount) => (
-        <span className="text-[#6E5B53]">
-          {discount.usageCount} {discount.usageLimit ? `/ ${discount.usageLimit}` : "used"}
+        <span className="text-[#6E5B53] font-medium">
+          {discount.type}
         </span>
       ),
     },
@@ -271,7 +294,7 @@ export function DiscountPage() {
             totalPages={totalPages}
             totalItems={filteredDiscounts.length}
             itemsPerPage={itemsPerPage}
-            onPageChange={setCurrentPage}
+            onPageChange={setPage}
             itemLabel="discounts"
           />
         )}

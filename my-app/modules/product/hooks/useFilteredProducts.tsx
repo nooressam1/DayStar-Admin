@@ -7,6 +7,7 @@ import { useGetCategories } from "@/app/api/hooks/useCategories";
 import { useUrlFilterState } from "@/modules/shared/hooks/useUrlFilterState";
 import { formatProductForCard } from "../utils/FormatProduct";
 import { parsePrice } from "@/utils/format";
+import { PRODUCT_BADGE_OPTIONS, PRODUCT_PRICE_RANGE_OPTIONS } from "../constants/productFilters";
 
 export interface UseFilteredProductsOptions {
   customProducts?: ProductItem[];
@@ -134,25 +135,14 @@ export function useFilteredProducts(options: UseFilteredProductsOptions = {}) {
         type: "select",
         value: badgeFilter,
         onChange: (val: string) => setFilter("badge", val),
-        options: [
-          { label: "All Badges", value: "All Badges" },
-          { label: "10% Sale / On Sale", value: "on_sale" },
-          { label: "Low Stock", value: "low_stock" },
-          { label: "Out of Stock", value: "out_of_stock" },
-          { label: "New Arrival", value: "new_arrival" },
-        ],
+        options: PRODUCT_BADGE_OPTIONS,
       },
       {
         key: "priceRange",
         type: "select",
         value: priceRangeFilter,
         onChange: (val: string) => setFilter("price", val),
-        options: [
-          { label: "All Prices", value: "All Prices" },
-          { label: "Under $150", value: "under_150" },
-          { label: "$150 - $250", value: "150_250" },
-          { label: "Over $250", value: "over_250" },
-        ],
+        options: PRODUCT_PRICE_RANGE_OPTIONS,
       },
       {
         key: "search",

@@ -86,4 +86,6 @@ export type {
   FilterDefault,
 } from "./hooks/useUrlFilterState";
 export { useDebounce } from "./hooks/useDebounce";
+export { usePagination } from "./hooks/usePagination";
+export type { UsePaginationReturn } from "./hooks/usePagination";
 

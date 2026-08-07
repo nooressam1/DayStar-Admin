@@ -157,7 +157,9 @@ export function ProductCard({
           {/* Category & Stock Row */}
           <div className="flex items-center justify-between text-xs">
             <span className="text-[11px] font-bold uppercase tracking-wider text-[#7A675E]">
-              {product.category}
+              {typeof product.category === "object" && product.category !== null
+                ? (product.category as any).name || "GENERAL"
+                : String(product.category || "GENERAL")}
             </span>
             <div className="flex items-center gap-1.5 font-medium text-[#4A3831]">
               <span className={`w-2 h-2 rounded-full ${stockInfo.dot}`} />

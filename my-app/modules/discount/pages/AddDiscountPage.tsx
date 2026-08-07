@@ -54,14 +54,13 @@ export function AddDiscountPage() {
 
     const payload = {
       code: state.code.trim().toUpperCase(),
-      title: state.title.trim() || undefined,
       type: state.discountType,
       value: isFreeShipping ? 0 : parseFloat(state.value) || 0,
       is_active: state.isActive,
       min_requirement_type: state.minRequirementOption,
       min_requirement_value: numericMinVal,
-      start_date: state.startDate,
-      end_date: state.endDate || undefined,
+      active_start_date: state.startDate,
+      active_end_date: state.endDate || undefined,
     };
 
     try {
@@ -122,17 +121,6 @@ export function AddDiscountPage() {
           className="font-mono font-semibold"
         />
 
-        {/* CAMPAIGN TITLE */}
-        <TextInput
-          label="CAMPAIGN TITLE (OPTIONAL)"
-          placeholder="e.g. Summer Special Offer 20% Off"
-          value={state.title}
-          onChange={(e) => {
-            setField("title", e.target.value);
-            clearError("title");
-          }}
-          error={errors.title}
-        />
 
         {/* DISCOUNT TYPE & VALUE */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
