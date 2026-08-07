@@ -15,7 +15,7 @@ import {
 import { CategoryTable } from "../components/CategoryTable";
 import { CategoryFormModal } from "../components/CategoryFormModal";
 import { Category } from "@/types";
-import { useGetCategories } from "@/app/api/hooks/useCategories";
+import { useGetCategories, useCreateCategory } from "@/app/api/hooks/useCategories";
 import { CATEGORY_STATUS_OPTIONS } from "../constants/categoryFilters";
 
 export type CategoryRecord = Category;
@@ -28,8 +28,9 @@ const CATEGORY_FILTERS = [
 export function CategoryPage() {
   const router = useRouter();
 
-  // ── Fetch Categories from Backend via React Query Hook ──
+  // ── Fetch & Mutate Categories via React Query Hooks ──
   const { data: fetchedCategories = [], isLoading, isError, error, refetch } = useGetCategories();
+  const createCategoryMutation = useCreateCategory();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<CategoryRecord | null>(null);
@@ -94,7 +95,7 @@ export function CategoryPage() {
 
   const handleOpenCreate = () => {
     setEditingCategory(null);
-    setIsModalOpen(true);
+    router.push("/category/new");
   };
 
   const handleOpenEdit = (cat: CategoryRecord) => {
@@ -102,10 +103,15 @@ export function CategoryPage() {
     setIsModalOpen(true);
   };
 
-  const handleSaveCategory = (categoryData: Partial<Category>) => {
-    console.log("Saving category data:", categoryData);
-    setIsModalOpen(false);
-    refetch();
+  const handleSaveCategory = async (categoryData: Partial<Category>) => {
+    try {
+      if (!editingCategory) {
+        await createCategoryMutation.mutateAsync(categoryData);
+      }
+      setIsModalOpen(false);
+    } catch (err) {
+      console.error("Failed to save category:", err);
+    }
   };
 
   const handleDeleteCategory = (id: string) => {
@@ -204,6 +210,7 @@ export function CategoryPage() {
         onClose={() => setIsModalOpen(false)}
         onSave={handleSaveCategory}
         category={editingCategory}
+        existingCategories={fetchedCategories}
       />
 
       {/* Delete Confirmation Modal */}

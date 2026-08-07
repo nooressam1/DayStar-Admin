@@ -5,6 +5,9 @@ export type { CategoryFormModalProps } from "./components/CategoryFormModal";
 export { CategoryPage } from "./pages/CategoryPage";
 export { AddCategoryPage } from "./pages/AddCategoryPage";
 export * from "./constants/categoryFilters";
+export { useCategoryForm } from "./hooks/useCategoryForm";
+export type { CategoryFormState, CategoryFormAction, CategoryFormErrors } from "./hooks/useCategoryForm";
+
 
 
 
