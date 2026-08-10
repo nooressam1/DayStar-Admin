@@ -32,6 +32,20 @@ export interface PaginatedResponse<T> {
   };
 }
 
+export function serializeQueryParams(params?: Record<string, any>): Record<string, string> {
+  if (!params) return {};
+  const cleanParams: Record<string, string> = {};
+  Object.entries(params).forEach(([key, val]) => {
+    if (val !== undefined && val !== null && val !== "" && val !== "undefined") {
+      if (typeof val === "string" && val.startsWith("All ")) {
+        return;
+      }
+      cleanParams[key] = String(val);
+    }
+  });
+  return cleanParams;
+}
+
 export async function clearAuthData(): Promise<void> {
   // Clear Supabase session
   try {

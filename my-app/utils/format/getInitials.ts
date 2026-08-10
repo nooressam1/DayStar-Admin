@@ -1,5 +1,3 @@
-export { formatDate } from "@/utils/format";
-
 export function getInitials(name?: string, fallbackInitials?: string): string {
   if (fallbackInitials) return fallbackInitials;
   if (!name) return "?";

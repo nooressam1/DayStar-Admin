@@ -1,10 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { discountsApi, CreateDiscountPayload, UpdateDiscountPayload } from "../endpoints/discounts";
+import { DiscountQueryParams } from "@/types";
 
-export const useGetDiscounts = () => {
-  return useQuery<any[], Error>({
-    queryKey: ["discounts"],
-    queryFn: () => discountsApi.getDiscounts(),
+export const useGetDiscounts = (params?: DiscountQueryParams) => {
+  return useQuery<{ items: any[]; total: number }, Error>({
+    queryKey: ["discounts", params],
+    queryFn: () => discountsApi.getDiscounts(params),
   });
 };
 

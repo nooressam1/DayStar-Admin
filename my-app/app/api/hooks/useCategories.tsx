@@ -1,11 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { categoryApi } from "../endpoints/categories";
-import { Category } from "@/types";
+import { Category, CategoryQueryParams } from "@/types";
 
-export const useGetCategories = () => {
-  return useQuery<Category[], Error>({
-    queryKey: ["categories"],
-    queryFn: () => categoryApi.getCategories(),
+export const useGetCategories = (params?: CategoryQueryParams) => {
+  return useQuery<{ items: Category[]; total: number }, Error>({
+    queryKey: ["categories", params],
+    queryFn: () => categoryApi.getCategories(params),
   });
 };
 

@@ -1,13 +1,23 @@
-import { Category } from "@/types";
-import { apiClient, ENDPOINTS } from "@/utils/api";
-export class categoryApi {
+import { Category, CategoryQueryParams } from "@/types";
+import { apiClient, ENDPOINTS, serializeQueryParams } from "@/utils/api";
 
-  static async getCategories(): Promise<Category[]> {
+export class categoryApi {
+  static async getCategories(
+    params?: CategoryQueryParams
+  ): Promise<{ items: Category[]; total: number }> {
     try {
-      return await apiClient.request<Category[]>(ENDPOINTS.CATEGORY.LIST);
+      const res = await apiClient.request<{ items: Category[]; total: number }>(
+        ENDPOINTS.CATEGORY.LIST,
+        serializeQueryParams(params)
+      );
+
+      return {
+        items: res?.items || [],
+        total: res?.total || 0,
+      };
     } catch (error) {
       console.error("Error fetching categories:", error);
-      return [];
+      return { items: [], total: 0 };
     }
   }
 

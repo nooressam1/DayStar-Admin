@@ -17,7 +17,8 @@ export function BulkGeneralDetailsCard({
   category,
   onCategoryChange,
 }: BulkGeneralDetailsCardProps) {
-  const { data: categories = [], isLoading } = useGetCategories();
+  const { data: categoriesResponse, isLoading } = useGetCategories();
+  const categories = useMemo(() => categoriesResponse?.items || [], [categoriesResponse]);
 
   const categoryOptions = useMemo(() => {
     if (isLoading) {

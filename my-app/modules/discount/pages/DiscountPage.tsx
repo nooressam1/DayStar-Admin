@@ -9,15 +9,14 @@ import {
   Filter,
   FilterConfig,
   Table,
-  ColumnConfig,
   useUrlFilterState,
   useDebounce,
-  usePagination,
   StatusBadge,
 } from "@/modules/shared";
 import { Discount } from "@/types";
 import { EditDiscountModal } from "../components/EditDiscountModal";
 import { DISCOUNT_STATUS_OPTIONS, DISCOUNT_TYPE_OPTIONS } from "../constants/discountFilters";
+import { getDiscountColumns } from "../utils/discountColumns";
 import {
   useGetDiscounts,
   useUpdateDiscount,
@@ -46,12 +45,53 @@ export interface DiscountRecord extends Partial<Discount> {
 
 export function DiscountPage() {
   const router = useRouter();
-  const { data: rawDiscounts = [], isLoading } = useGetDiscounts();
   const updateDiscountMutation = useUpdateDiscount();
   const deleteDiscountMutation = useDeleteDiscount();
 
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  // ── URL-synced filter state ──
+  const {
+    filterValues,
+    setFilter,
+    currentPage,
+    itemsPerPage,
+    setPage,
+  } = useUrlFilterState({
+    filters: DISCOUNT_FILTERS,
+    itemsPerPage: 10,
+  });
+
+  const statusFilter = filterValues.status;
+  const typeFilter = filterValues.type;
+
+  // ── Local search input state with debouncing ──
+  const [localSearch, setLocalSearch] = useState(filterValues.search);
+  const debouncedSearch = useDebounce(localSearch, 350);
+
+  useEffect(() => {
+    setLocalSearch(filterValues.search);
+  }, [filterValues.search]);
+
+  useEffect(() => {
+    if (debouncedSearch !== filterValues.search) {
+      setFilter("search", debouncedSearch);
+    }
+  }, [debouncedSearch, filterValues.search, setFilter]);
+
+  // ── Fetch discounts via React Query Hooks (Server-side Pagination) ──
+  const { data: response, isLoading } = useGetDiscounts({
+    page: currentPage,
+    limit: itemsPerPage,
+    search: debouncedSearch,
+    status: statusFilter,
+    type: typeFilter,
+  });
+
+  const rawDiscounts = response?.items || [];
+  const totalItems = response?.total || 0;
+  const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
 
   // Transform raw backend response into DiscountRecord format
   const discounts: DiscountRecord[] = useMemo(() => {
@@ -73,58 +113,6 @@ export function DiscountPage() {
       minRequirementValue: d.min_requirement_value ? String(d.min_requirement_value) : undefined,
     }));
   }, [rawDiscounts]);
-
-  // ── URL-synced filter state ──
-  const {
-    filterValues,
-    setFilter,
-    currentPage,
-    itemsPerPage,
-    setPage,
-  } = useUrlFilterState({
-    filters: DISCOUNT_FILTERS,
-    itemsPerPage: 10,
-  });
-
-  const statusFilter = filterValues.status;
-  const typeFilter = filterValues.type;
-
-  // ── Local search input state with debouncing ──
-  const [localSearch, setLocalSearch] = useState(filterValues.search);
-  const debouncedSearch = useDebounce(localSearch, 350);
-
-  // Sync local search state when URL search param changes externally
-  useEffect(() => {
-    setLocalSearch(filterValues.search);
-  }, [filterValues.search]);
-
-  // Push debounced search to URL filter state
-  useEffect(() => {
-    if (debouncedSearch !== filterValues.search) {
-      setFilter("search", debouncedSearch);
-    }
-  }, [debouncedSearch, filterValues.search, setFilter]);
-
-  // ── Local filtering using URL filter state and debounced search ──
-  const filteredDiscounts = useMemo(() => {
-    return discounts.filter((d) => {
-      if (statusFilter !== "All Statuses" && d.status !== statusFilter) return false;
-      if (typeFilter !== "All Types" && d.type !== typeFilter) return false;
-      if (
-        debouncedSearch &&
-        !d.code.toLowerCase().includes(debouncedSearch.toLowerCase())
-      ) {
-        return false;
-      }
-      return true;
-    });
-  }, [discounts, statusFilter, typeFilter, debouncedSearch]);
-
-  // ── Reusable Pagination Hook ──
-  const {
-    paginatedItems: paginatedDiscounts,
-    totalPages,
-  } = usePagination(filteredDiscounts, currentPage, itemsPerPage);
 
   const handleCopyCode = (code: string) => {
     navigator.clipboard.writeText(code);
@@ -172,102 +160,11 @@ export function DiscountPage() {
     [statusFilter, typeFilter, localSearch, setFilter]
   );
 
-  const discountColumns: ColumnConfig<DiscountRecord>[] = [
-    {
-      key: "code",
-      header: "DISCOUNT CODE",
-      accessor: (discount) => (
-        <div className="flex items-center gap-2">
-          <span className="font-mono text-xs font-bold px-2.5 py-1 rounded-md bg-[#FAF5F2] border border-[#E9E3DE] text-[#583F37]">
-            {discount.code}
-          </span>
-          <button
-            onClick={() => handleCopyCode(discount.code)}
-            title="Copy Discount Code"
-            className="text-[#8A756C] hover:text-[#583F37] p-1 rounded-md hover:bg-stone-100 transition-colors cursor-pointer"
-          >
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.8}
-                d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-              />
-            </svg>
-          </button>
-        </div>
-      ),
-    },
-    {
-      key: "value",
-      header: "VALUE",
-      accessor: "value",
-      className: "font-medium text-[#583F37]",
-    },
-    {
-      key: "status",
-      header: "STATUS",
-      accessor: (discount) => (
-        <StatusBadge status={discount.status} />
-      ),
-    },
-    {
-      key: "type",
-      header: "DISCOUNT TYPE",
-      accessor: (discount) => (
-        <span className="text-[#6E5B53] font-medium">
-          {discount.type}
-        </span>
-      ),
-    },
-    {
-      key: "dates",
-      header: "START & END DATE",
-      accessor: (discount) => (
-        <span className="text-xs text-[#8A756C]">
-          {discount.startDate} {discount.endDate ? `to ${discount.endDate}` : ""}
-        </span>
-      ),
-    },
-    {
-      key: "actions",
-      header: "ACTIONS",
-      align: "right",
-      accessor: (discount) => (
-        <div className="flex items-center justify-end gap-1.5">
-          <button
-            onClick={() => setEditingDiscount(discount)}
-            title="Edit Discount"
-            className="p-1.5 rounded-lg text-[#583F37] hover:bg-[#FAF5F2] border border-transparent hover:border-[#E9E3DE] transition-colors cursor-pointer"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.8}
-                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-              />
-            </svg>
-          </button>
-
-          <button
-            onClick={() => setDeletingId(discount.id)}
-            title="Delete Discount"
-            className="p-1.5 rounded-lg text-red-600 hover:bg-red-50 border border-transparent hover:border-red-200 transition-colors cursor-pointer"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.8}
-                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-              />
-            </svg>
-          </button>
-        </div>
-      ),
-    },
-  ];
+  const discountColumns = getDiscountColumns({
+    onCopyCode: handleCopyCode,
+    onEdit: setEditingDiscount,
+    onDelete: setDeletingId,
+  });
 
   return (
     <div className="flex flex-col gap-6 pb-12">
@@ -303,7 +200,7 @@ export function DiscountPage() {
       {/* Reusable Table Component with built-in isLoading */}
       <div className="space-y-0">
         <Table
-          data={paginatedDiscounts}
+          data={discounts}
           columns={discountColumns}
           isLoading={isLoading}
           keyExtractor={(discount) => discount.id}
@@ -311,11 +208,11 @@ export function DiscountPage() {
         />
 
         {/* Pagination Component */}
-        {!isLoading && (
+        {!isLoading && totalPages > 1 && (
           <Pagination
             currentPage={currentPage}
             totalPages={totalPages}
-            totalItems={filteredDiscounts.length}
+            totalItems={totalItems}
             itemsPerPage={itemsPerPage}
             onPageChange={setPage}
             itemLabel="discounts"

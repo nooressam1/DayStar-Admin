@@ -4,6 +4,7 @@ import React from "react";
 import Link from "next/link";
 
 import { OrderStatus } from "@/enums";
+import { getInitials } from "@/utils/format";
 
 import { StatusBadge } from "./StatusBadge";
 
@@ -30,16 +31,6 @@ export function RecentOrdersTable({
   isLoading = false,
   className = "",
 }: RecentOrdersTableProps) {
-  const getInitials = (name: string, fallbackInitials?: string) => {
-    if (fallbackInitials) return fallbackInitials;
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .substring(0, 2);
-  };
-
   return (
     <div className={`bg-white rounded-2xl border border-[#E9E3DE] shadow-xs overflow-hidden ${className}`}>
       {/* Header Row */}

@@ -1,16 +1,14 @@
 "use client";
 
-import React, { useMemo, useCallback } from "react";
+import React, { useMemo, useCallback, useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { PageHeader, Filter, FilterConfig, Table, ColumnConfig, Pagination, StatusBadge } from "@/modules/shared";
+import { PageHeader, Filter, FilterConfig, Table, Pagination, useDebounce } from "@/modules/shared";
 import { useUrlFilterState } from "@/modules/shared/hooks/useUrlFilterState";
 import { useGetAdminOrders } from "@/app/api/hooks/useOrders";
 import { Order } from "@/types";
-import { OrderStatus } from "@/enums";
-import { formatMoney } from "@/utils/format";
 import { ORDER_STATUS_OPTIONS } from "../constants/orderFilters";
-import { formatDate, getInitials } from "../utils";
+import { orderColumns } from "../utils/orderColumns";
 
 // ── Order filter definitions ──
 const ORDER_FILTERS = [
@@ -19,40 +17,6 @@ const ORDER_FILTERS = [
 ];
 
 const extractOrderKey = (order: Order) => order.id;
-
-// ── Memoized cell renderers ──
-// Extracting these avoids creating new JSX elements on every table re-render.
-
-const OrderNumberCell = React.memo(({ order }: { order: Order }) => (
-  <Link
-    href={`/order/${order.id}`}
-    onClick={(e) => e.stopPropagation()}
-    className="text-[#6E4B42] font-semibold hover:underline"
-  >
-    #{order.order_number}
-  </Link>
-));
-OrderNumberCell.displayName = "OrderNumberCell";
-
-const CustomerCell = React.memo(({ order }: { order: Order }) => (
-  <div className="flex items-center gap-3">
-    <div className="w-8 h-8 rounded-full bg-[#E4EBF9] text-[#30457A] font-bold text-xs flex items-center justify-center shrink-0">
-      {getInitials(order.full_name)}
-    </div>
-    <div className="flex flex-col">
-      <span className="font-medium">{order.full_name || "—"}</span>
-      {order.phone_number && (
-        <span className="text-xs text-[#8A756C]">{order.phone_number}</span>
-      )}
-    </div>
-  </div>
-));
-CustomerCell.displayName = "CustomerCell";
-
-const StatusBadgeCell = React.memo(({ order }: { order: Order }) => (
-  <StatusBadge status={order.status} size="md" />
-));
-StatusBadgeCell.displayName = "StatusBadgeCell";
 
 export function OrderPage() {
   const router = useRouter();
@@ -69,14 +33,27 @@ export function OrderPage() {
   });
 
   const statusFilter = filterValues.status;
-  const searchQuery = filterValues.search;
+
+  // ── Debounced Local Search ──
+  const [localSearch, setLocalSearch] = useState(filterValues.search || "");
+  const debouncedSearch = useDebounce(localSearch, 350);
+
+  useEffect(() => {
+    setLocalSearch(filterValues.search || "");
+  }, [filterValues.search]);
+
+  useEffect(() => {
+    if (debouncedSearch !== filterValues.search) {
+      setFilter("search", debouncedSearch);
+    }
+  }, [debouncedSearch, filterValues.search, setFilter]);
 
   // ── Fetch orders from API (server-side filtering + pagination) ──
   const { data: response, isLoading, isError, error, refetch } = useGetAdminOrders({
     page: currentPage,
     limit: itemsPerPage,
     ...(statusFilter !== "All Statuses" ? { status: statusFilter.toLowerCase() } : {}),
-    ...(searchQuery ? { search: searchQuery } : {}),
+    ...(debouncedSearch ? { search: debouncedSearch } : {}),
   });
 
   // ── Memoized derived values ──
@@ -104,42 +81,11 @@ export function OrderPage() {
     {
       key: "search",
       type: "search",
-      value: searchQuery,
-      onChange: (val: string) => setFilter("search", val),
+      value: localSearch,
+      onChange: (val: string) => setLocalSearch(val),
       placeholder: "Search by order #, name or phone...",
     },
-  ], [statusFilter, searchQuery, setFilter]);
-
-  // ── Column config (using memoized cell components) ──
-  const orderColumns: ColumnConfig<Order>[] = useMemo(() => [
-    {
-      key: "order_number",
-      header: "Order #",
-      accessor: (order: Order) => <OrderNumberCell order={order} />,
-    },
-    {
-      key: "full_name",
-      header: "Customer",
-      accessor: (order: Order) => <CustomerCell order={order} />,
-    },
-    {
-      key: "created_at",
-      header: "Date",
-      accessor: (order: Order) => formatDate(order.created_at),
-      className: "text-[#8A756C]",
-    },
-    {
-      key: "Order_status",
-      header: "Order Status",
-      accessor: (order: Order) => <StatusBadgeCell order={order} />,
-    },
-    {
-      key: "total",
-      header: "Amount",
-      accessor: (order: Order) => formatMoney(order.total),
-      className: "font-semibold text-[#3D2E28]",
-    },
-  ], []);
+  ], [statusFilter, localSearch, setFilter]);
 
   const handleRowClick = useCallback(
     (order: Order) => router.push(`/order/${order.id}`),

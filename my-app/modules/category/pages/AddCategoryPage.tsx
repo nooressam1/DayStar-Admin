@@ -9,7 +9,8 @@ import { useGetCategories, useCreateCategory } from "@/app/api/hooks/useCategori
 
 export function AddCategoryPage() {
   const router = useRouter();
-  const { data: fetchedCategories = [] } = useGetCategories();
+  const { data: categoriesResponse } = useGetCategories();
+  const fetchedCategories = categoriesResponse?.items || [];
   const createCategoryMutation = useCreateCategory();
   const { state, setField, validateForm } = useCategoryForm();
   const [errors, setErrors] = useState<CategoryFormErrors>({});

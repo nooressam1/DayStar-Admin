@@ -51,7 +51,8 @@ export function useFilteredProducts(options: UseFilteredProductsOptions = {}) {
   const debouncedSearchQuery = useDebounce(searchQuery, 350);
 
   // ── Fetch categories from API ──
-  const { data: categories = [] } = useGetCategories();
+  const { data: categoriesResponse } = useGetCategories();
+  const categories = categoriesResponse?.items || [];
 
   // ── Fetch products from API (pass categoryId, page, limit, and debounced search) ──
   const { data: response, isLoading, isError } = useGetProducts({

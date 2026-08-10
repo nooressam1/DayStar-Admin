@@ -1,5 +1,5 @@
 import { Product, ProductParams, CreateProductDto } from "@/types";
-import { apiClient, ENDPOINTS } from "@/utils/api";
+import { apiClient, ENDPOINTS, serializeQueryParams } from "@/utils/api";
 
 export class productApi {
   static async getProduct(id: string): Promise<Product | null> {
@@ -12,19 +12,9 @@ export class productApi {
 
   static async getProducts(params?: ProductParams): Promise<{ items: Product[]; total: number }> {
     try {
-      const stringParams: Record<string, string> = {};
-      if (params?.page) stringParams.page = params.page.toString();
-      if (params?.limit) stringParams.limit = params.limit.toString();
-      if (params?.categoryId) stringParams.categoryId = params.categoryId;
-      if (params?.collection) stringParams.collection = params.collection;
-      if (params?.search) stringParams.search = params.search;
-      if (params?.discount) stringParams.discount = params.discount.toString();
-      if (params?.includeInactive !== undefined) stringParams.includeInactive = params.includeInactive.toString();
-      if (params?.all !== undefined) stringParams.all = params.all.toString();
-
       return await apiClient.request<{ items: Product[]; total: number }>(
         ENDPOINTS.PRODUCT.LIST,
-        stringParams
+        serializeQueryParams(params)
       );
     } catch (error) {
       console.error("Error fetching products:", error);

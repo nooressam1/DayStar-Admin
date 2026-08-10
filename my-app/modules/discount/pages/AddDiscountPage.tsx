@@ -11,7 +11,8 @@ import { useGetDiscounts, useCreateDiscount } from "@/app/api/hooks/useDiscounts
 
 export function AddDiscountPage() {
   const router = useRouter();
-  const { data: rawDiscounts = [] } = useGetDiscounts();
+  const { data: discountsResponse } = useGetDiscounts();
+  const rawDiscounts = discountsResponse?.items || [];
   const createDiscountMutation = useCreateDiscount();
 
   const {

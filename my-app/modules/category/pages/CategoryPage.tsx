@@ -10,7 +10,6 @@ import {
   FilterConfig,
   useUrlFilterState,
   useDebounce,
-  usePagination,
 } from "@/modules/shared";
 import { CategoryTable } from "../components/CategoryTable";
 import { CategoryFormModal } from "../components/CategoryFormModal";
@@ -27,16 +26,6 @@ const CATEGORY_FILTERS = [
 
 export function CategoryPage() {
   const router = useRouter();
-
-  // ── Fetch & Mutate Categories via React Query Hooks ──
-  const { data: fetchedCategories = [], isLoading, isError, error, refetch } = useGetCategories();
-  const createCategoryMutation = useCreateCategory();
-  const updateCategoryMutation = useUpdateCategory();
-  const deleteCategoryMutation = useDeleteCategory();
-
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingCategory, setEditingCategory] = useState<CategoryRecord | null>(null);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   // ── URL-synced Filter State ──
   const {
@@ -66,34 +55,28 @@ export function CategoryPage() {
     }
   }, [debouncedSearch, filterValues.search, setFilter]);
 
-  // ── Filtered Categories (Single Source of Truth: fetchedCategories) ──
-  const filteredCategories = useMemo(() => {
-    return fetchedCategories.filter((c) => {
-      const catStatus = c.status || "Active";
-      if (statusFilter !== "All Statuses" && catStatus !== statusFilter) {
-        return false;
-      }
+  // ── Fetch & Mutate Categories via React Query Hooks (Server-side Pagination) ──
+  const { data: response, isLoading, isError, error, refetch } = useGetCategories({
+    page: currentPage,
+    limit: itemsPerPage,
+    search: debouncedSearch,
+    status: statusFilter,
+  });
+  const createCategoryMutation = useCreateCategory();
+  const updateCategoryMutation = useUpdateCategory();
+  const deleteCategoryMutation = useDeleteCategory();
 
-      if (debouncedSearch) {
-        const query = debouncedSearch.toLowerCase();
-        const matchesName = c.name.toLowerCase().includes(query);
-        const matchesSlug = (c.slug || "").toLowerCase().includes(query);
-        if (!matchesName && !matchesSlug) return false;
-      }
-      return true;
-    });
-  }, [fetchedCategories, statusFilter, debouncedSearch]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<CategoryRecord | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  // ── Reusable Pagination Hook ──
-  const {
-    paginatedItems: paginatedCategories,
-    totalPages,
-  } = usePagination(filteredCategories, currentPage, itemsPerPage);
+  const categories = useMemo(() => response?.items || [], [response]);
+  const totalItems = useMemo(() => response?.total || 0, [response]);
+  const totalPages = useMemo(() => Math.max(1, Math.ceil(totalItems / itemsPerPage)), [totalItems, itemsPerPage]);
 
-  // ── Stats Calculations ──
-  const totalCategoriesCount = fetchedCategories.length;
-  const activeCount = fetchedCategories.filter((c) => (c.status || "Active") === "Active").length;
-  const inactiveCount = totalCategoriesCount - activeCount;
+  const totalCategoriesCount = totalItems;
+  const activeCount = useMemo(() => categories.filter((c) => (c.status || "Active") === "Active").length, [categories]);
+  const inactiveCount = Math.max(0, totalCategoriesCount - activeCount);
 
   const handleOpenCreate = () => {
     setEditingCategory(null);
@@ -205,11 +188,11 @@ export function CategoryPage() {
 
       {/* Category Table Component */}
       <CategoryTable
-        categories={paginatedCategories}
+        categories={categories}
         currentPage={currentPage}
         totalPages={totalPages}
         itemsPerPage={itemsPerPage}
-        totalItems={filteredCategories.length}
+        totalItems={totalItems}
         onPageChange={setPage}
         onEdit={handleOpenEdit}
         onDelete={setDeletingId}
@@ -222,7 +205,7 @@ export function CategoryPage() {
         onClose={() => setIsModalOpen(false)}
         onSave={handleSaveCategory}
         category={editingCategory}
-        existingCategories={fetchedCategories}
+        existingCategories={categories}
       />
 
       {/* Delete Confirmation Modal */}

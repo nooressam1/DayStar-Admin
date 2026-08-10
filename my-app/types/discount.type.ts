@@ -12,3 +12,12 @@ export interface Discount {
   active_start_date?: string;
   active_end_date?: string;
 }
+
+export interface DiscountQueryParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: string;
+  type?: string;
+}
+

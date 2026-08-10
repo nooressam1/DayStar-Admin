@@ -1,4 +1,5 @@
-import { apiClient, ENDPOINTS } from "@/utils/api";
+import { apiClient, ENDPOINTS, serializeQueryParams } from "@/utils/api";
+import { DiscountQueryParams } from "@/types";
 
 export interface CreateDiscountPayload {
   code: string;
@@ -23,15 +24,25 @@ export interface UpdateDiscountPayload {
 }
 
 export class discountsApi {
-  static async getDiscounts(): Promise<any[]> {
+  static async getDiscounts(
+    params?: DiscountQueryParams
+  ): Promise<{ items: any[]; total: number }> {
     try {
-      const res = await apiClient.request<any[]>(ENDPOINTS.DISCOUNT.LIST, undefined, {
-        method: "GET",
-      });
-      return Array.isArray(res) ? res : [];
+      const res = await apiClient.request<{ items: any[]; total: number }>(
+        ENDPOINTS.DISCOUNT.LIST,
+        serializeQueryParams(params),
+        {
+          method: "GET",
+        }
+      );
+
+      return {
+        items: res?.items || [],
+        total: res?.total || 0,
+      };
     } catch (error) {
       console.error("Error fetching discounts:", error);
-      return [];
+      return { items: [], total: 0 };
     }
   }
 

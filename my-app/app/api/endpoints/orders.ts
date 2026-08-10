@@ -1,5 +1,5 @@
 import { Order, OrderWithDetails } from "@/types";
-import { apiClient, ENDPOINTS } from "@/utils/api";
+import { apiClient, ENDPOINTS, serializeQueryParams } from "@/utils/api";
 
 export interface OrderParams {
   page?: number;
@@ -12,15 +12,9 @@ export class orderApi {
   static async getAdminOrders(
     params?: OrderParams
   ): Promise<{ items: Order[]; total: number }> {
-    const stringParams: Record<string, string> = {};
-    if (params?.page) stringParams.page = params.page.toString();
-    if (params?.limit) stringParams.limit = params.limit.toString();
-    if (params?.status) stringParams.status = params.status;
-    if (params?.search) stringParams.search = params.search;
-
     return await apiClient.request<{ items: Order[]; total: number }>(
       ENDPOINTS.ORDER.ADMIN_LIST,
-      stringParams
+      serializeQueryParams(params)
     );
   }
 

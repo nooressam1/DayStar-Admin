@@ -17,7 +17,8 @@ export function OrganizationCard({
   title = "Organization",
   className = "",
 }: OrganizationCardProps) {
-  const { data: categories = [] } = useGetCategories();
+  const { data: categoriesResponse } = useGetCategories();
+  const categories = categoriesResponse?.items || [];
   const categoryOptions = [
     { value: "", label: "Select a category", disabled: true },
     ...categories.map((cat) => ({
