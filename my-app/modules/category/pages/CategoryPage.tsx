@@ -15,7 +15,7 @@ import {
 import { CategoryTable } from "../components/CategoryTable";
 import { CategoryFormModal } from "../components/CategoryFormModal";
 import { Category } from "@/types";
-import { useGetCategories, useCreateCategory } from "@/app/api/hooks/useCategories";
+import { useGetCategories, useCreateCategory, useUpdateCategory, useDeleteCategory } from "@/app/api/hooks/useCategories";
 import { CATEGORY_STATUS_OPTIONS } from "../constants/categoryFilters";
 
 export type CategoryRecord = Category;
@@ -31,6 +31,8 @@ export function CategoryPage() {
   // ── Fetch & Mutate Categories via React Query Hooks ──
   const { data: fetchedCategories = [], isLoading, isError, error, refetch } = useGetCategories();
   const createCategoryMutation = useCreateCategory();
+  const updateCategoryMutation = useUpdateCategory();
+  const deleteCategoryMutation = useDeleteCategory();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<CategoryRecord | null>(null);
@@ -107,17 +109,27 @@ export function CategoryPage() {
     try {
       if (!editingCategory) {
         await createCategoryMutation.mutateAsync(categoryData);
+      } else {
+        await updateCategoryMutation.mutateAsync({
+          id: editingCategory.id,
+          payload: categoryData,
+        });
       }
       setIsModalOpen(false);
+      setEditingCategory(null);
     } catch (err) {
       console.error("Failed to save category:", err);
     }
   };
 
-  const handleDeleteCategory = (id: string) => {
-    console.log("Deleting category:", id);
-    setDeletingId(null);
-    refetch();
+  const handleDeleteCategory = async (id: string) => {
+    try {
+      await deleteCategoryMutation.mutateAsync(id);
+    } catch (err) {
+      console.error("Failed to delete category:", err);
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   const categoryConfig: FilterConfig[] = useMemo(

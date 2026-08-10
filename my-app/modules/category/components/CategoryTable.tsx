@@ -1,8 +1,9 @@
 "use client";
 
 import React from "react";
-import { Table, ColumnConfig, Pagination } from "@/modules/shared";
+import { Table, ColumnConfig, Pagination, StatusBadge } from "@/modules/shared";
 import { CategoryRecord } from "../pages/CategoryPage";
+import { formatDate } from "@/utils/format";
 
 export interface CategoryTableProps {
   categories: CategoryRecord[];
@@ -60,33 +61,16 @@ export function CategoryTable({
     {
       key: "status",
       header: "STATUS",
-      accessor: (category: any) => {
-        const status = category.status || "Active";
-        return (
-          <span
-            className={`inline-block text-xs font-semibold px-3 py-1 rounded-full ${
-              status === "Active"
-                ? "bg-[#50E3C2]/20 text-[#044E35] border border-[#50E3C2]/40"
-                : "bg-stone-100 text-stone-600 border border-stone-200"
-            }`}
-          >
-            {status}
-          </span>
-        );
-      },
+      accessor: (category: any) => (
+        <StatusBadge status={category.status || "Active"} />
+      ),
     },
     {
       key: "created_at",
       header: "CREATED AT",
       accessor: (category) => (
         <span className="text-xs text-[#8A756C]">
-          {category.created_at
-            ? new Date(category.created_at).toLocaleDateString("en-US", {
-              year: "numeric",
-              month: "short",
-              day: "numeric",
-            })
-            : "—"}
+          {formatDate(category.created_at)}
         </span>
       ),
     },

@@ -110,7 +110,7 @@ export function useAddDiscountForm(overrideInitialState?: Partial<AddDiscountSta
     dispatch({ type: "CHANGE_MIN_REQUIREMENT", option });
   }, []);
 
-  const validateForm = useCallback((existingDiscounts: DiscountRecord[] = [], excludeId?: string): { isValid: boolean; errors: DiscountFormErrors } => {
+  const validateForm = useCallback((existingDiscounts: { code: string; id?: string }[] = [], excludeId?: string): { isValid: boolean; errors: DiscountFormErrors } => {
     const errors: DiscountFormErrors = {};
 
     const formattedCode = state.code.trim();

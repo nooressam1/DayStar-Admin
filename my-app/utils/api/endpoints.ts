@@ -11,6 +11,7 @@ export const ENDPOINTS = {
     LIST: "/discount",
     CREATE: "/discount",
     GET: (code: string) => `/discount/${code}`,
+    UPDATE: (id: string) => `/discount/${id}`,
     DELETE: (id: string) => `/discount/${id}`,
   },
   CATEGORY: {

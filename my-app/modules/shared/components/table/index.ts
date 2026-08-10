@@ -9,3 +9,6 @@ export type { TableRowProps } from "./TableRow";
 
 export { TableCell } from "./TableCell";
 export type { TableCellProps } from "./TableCell";
+
+export { TableSkeleton } from "./TableSkeleton";
+export type { TableSkeletonProps } from "./TableSkeleton";

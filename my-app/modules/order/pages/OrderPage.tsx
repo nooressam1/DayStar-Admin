@@ -3,58 +3,20 @@
 import React, { useMemo, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { PageHeader, Filter, FilterConfig, Table, ColumnConfig, Pagination } from "@/modules/shared";
+import { PageHeader, Filter, FilterConfig, Table, ColumnConfig, Pagination, StatusBadge } from "@/modules/shared";
 import { useUrlFilterState } from "@/modules/shared/hooks/useUrlFilterState";
 import { useGetAdminOrders } from "@/app/api/hooks/useOrders";
 import { Order } from "@/types";
 import { OrderStatus } from "@/enums";
 import { formatMoney } from "@/utils/format";
 import { ORDER_STATUS_OPTIONS } from "../constants/orderFilters";
+import { formatDate, getInitials } from "../utils";
 
 // ── Order filter definitions ──
 const ORDER_FILTERS = [
   { key: "status", defaultValue: "All Statuses" },
   { key: "search", defaultValue: "" },
 ];
-
-function getStatusBadge(status: string) {
-  const upper = status?.toUpperCase();
-  switch (upper) {
-    case "SHIPPED":
-    case "DELIVERED":
-      return "bg-[#80F2C5] text-[#085C3A]";
-    case "PROCESSING":
-      return "bg-[#D6E2FF] text-[#2546A3]";
-    case "PENDING":
-      return "bg-[#FFE0E0] text-[#A62424]";
-    case "CANCELLED":
-      return "bg-[#E2E8F0] text-[#475569]";
-    default:
-      return "bg-stone-100 text-stone-700";
-  }
-}
-
-function getInitials(name?: string): string {
-  if (!name) return "?";
-  return name
-    .split(" ")
-    .map((w) => w[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
-}
-
-function formatDate(dateStr: string): string {
-  try {
-    return new Date(dateStr).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
-  } catch {
-    return dateStr;
-  }
-}
 
 const extractOrderKey = (order: Order) => order.id;
 
@@ -88,36 +50,9 @@ const CustomerCell = React.memo(({ order }: { order: Order }) => (
 CustomerCell.displayName = "CustomerCell";
 
 const StatusBadgeCell = React.memo(({ order }: { order: Order }) => (
-  <span
-    className={`inline-block text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-wider ${getStatusBadge(
-      order.status
-    )}`}
-  >
-    {order.status}
-  </span>
+  <StatusBadge status={order.status} size="md" />
 ));
 StatusBadgeCell.displayName = "StatusBadgeCell";
-
-const OrderTableSkeleton = React.memo(() => (
-  <div className="bg-white rounded-2xl border border-[#EBE3DE] shadow-xs overflow-hidden divide-y divide-[#EBE3DE]">
-    {[...Array(5)].map((_, i) => (
-      <div key={i} className="p-4 flex items-center justify-between animate-pulse gap-4">
-        <div className="w-20 h-4 bg-stone-200 rounded" />
-        <div className="flex items-center gap-3 flex-1 max-w-xs">
-          <div className="w-8 h-8 rounded-full bg-stone-200 shrink-0" />
-          <div className="space-y-1.5 flex-1">
-            <div className="w-28 h-3.5 bg-stone-200 rounded" />
-            <div className="w-20 h-2.5 bg-stone-100 rounded" />
-          </div>
-        </div>
-        <div className="w-24 h-4 bg-stone-100 rounded" />
-        <div className="w-16 h-6 bg-stone-200 rounded-full" />
-        <div className="w-16 h-4 bg-stone-200 rounded" />
-      </div>
-    ))}
-  </div>
-));
-OrderTableSkeleton.displayName = "OrderTableSkeleton";
 
 export function OrderPage() {
   const router = useRouter();
@@ -194,8 +129,8 @@ export function OrderPage() {
       className: "text-[#8A756C]",
     },
     {
-      key: "status",
-      header: "Status",
+      key: "Order_status",
+      header: "Order Status",
       accessor: (order: Order) => <StatusBadgeCell order={order} />,
     },
     {
@@ -226,8 +161,7 @@ export function OrderPage() {
       {/* Filter Component */}
       <Filter config={orderConfig} />
 
-      {/* Loading / Error states */}
-      {isLoading && <OrderTableSkeleton />}
+      {/* Error state */}
       {isError && (
         <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl flex items-center justify-between gap-4 shadow-xs">
           <div className="flex items-center gap-3">
@@ -249,17 +183,18 @@ export function OrderPage() {
       )}
 
       {/* Table + Pagination */}
-      {!isLoading && !isError && (
+      {!isError && (
         <div className="space-y-0">
           <Table
             data={orders}
             columns={orderColumns}
+            isLoading={isLoading}
             keyExtractor={extractOrderKey}
             onRowClick={handleRowClick}
             emptyText="No orders match your filter criteria."
           />
 
-          {totalPages > 1 && (
+          {!isLoading && totalPages > 1 && (
             <Pagination
               currentPage={currentPage}
               totalPages={totalPages}

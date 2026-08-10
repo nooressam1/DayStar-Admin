@@ -4,6 +4,7 @@ import React from "react";
 import Link from "next/link";
 import {
   ProductCard,
+  ProductCardSkeleton,
   ProductItem,
 } from "@/modules/shared";
 import {
@@ -120,7 +121,11 @@ export function BulkEditProductsPage({
 
         {/* Selected Products Grid */}
         {isLoading ? (
-          <div className="py-4 text-sm text-[#8A756C]">Loading selected products...</div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[...Array(4)].map((_, i) => (
+              <ProductCardSkeleton key={i} />
+            ))}
+          </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {displayProducts.map((product) => (

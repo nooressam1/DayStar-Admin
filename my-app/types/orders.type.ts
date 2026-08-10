@@ -32,5 +32,6 @@ export interface OrderWithDetails extends Order {
   discount?: number;
   delivery_fee?: number;
   payment_method?: string;
+  payment_status?: string;
 }
 

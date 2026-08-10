@@ -6,13 +6,13 @@ import { PageHeader, Button, TextInput } from "@/modules/shared";
 import { MinimumRequirementSelector } from "../components/MinimumRequirementSelector";
 import { DiscountType } from "@/enums";
 import { useAddDiscountForm, DiscountFormErrors } from "../hooks/useAddDiscountForm";
-import { fetchDiscountsApi, createDiscountApi } from "../utils/discountStorage";
 import { DiscountRecord } from "./DiscountPage";
+import { useGetDiscounts, useCreateDiscount } from "@/app/api/hooks/useDiscounts";
 
 export function AddDiscountPage() {
   const router = useRouter();
-  const [existingDiscounts, setExistingDiscounts] = useState<DiscountRecord[]>([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { data: rawDiscounts = [] } = useGetDiscounts();
+  const createDiscountMutation = useCreateDiscount();
 
   const {
     state,
@@ -27,10 +27,6 @@ export function AddDiscountPage() {
 
   const [errors, setErrors] = useState<DiscountFormErrors>({});
 
-  useEffect(() => {
-    fetchDiscountsApi().then(setExistingDiscounts);
-  }, []);
-
   const clearError = (field: keyof DiscountFormErrors) => {
     setErrors((prev) => {
       if (!prev[field]) return prev;
@@ -40,13 +36,12 @@ export function AddDiscountPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const result = validateForm(existingDiscounts);
+    const result = validateForm(rawDiscounts);
     if (!result.isValid) {
       setErrors(result.errors);
       return;
     }
     setErrors({});
-    setIsSubmitting(true);
 
     const numericMinVal = state.minRequirementOption === "none"
       ? 0
@@ -64,10 +59,9 @@ export function AddDiscountPage() {
     };
 
     try {
-      await createDiscountApi(payload);
+      await createDiscountMutation.mutateAsync(payload);
       router.push("/discount");
     } catch (err: any) {
-      setIsSubmitting(false);
       const msg = err?.message || err?.details?.message || "Failed to create discount.";
       if (msg.toLowerCase().includes("code") || msg.toLowerCase().includes("exist")) {
         setErrors((prev) => ({

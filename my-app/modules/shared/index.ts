@@ -9,6 +9,8 @@ export { SalesChart } from "./components/SalesChart";
 export type { SalesChartProps, SalesChartItem } from "./components/SalesChart";
 export { RecentOrdersTable } from "./components/RecentOrdersTable";
 export type { RecentOrdersTableProps, RecentOrderItem } from "./components/RecentOrdersTable";
+export { StatusBadge } from "./components/StatusBadge";
+export type { StatusBadgeProps, BadgeVariant, BadgeSize } from "./components/StatusBadge";
 export { OrderStatus, PaymentStatus } from "@/enums";
 
 export {
@@ -16,6 +18,7 @@ export {
   TableHeaderColumn,
   TableRow,
   TableCell,
+  TableSkeleton,
 } from "./components/table";
 export type {
   TableProps,
@@ -24,6 +27,7 @@ export type {
   TableHeaderColumnProps,
   TableRowProps,
   TableCellProps,
+  TableSkeletonProps,
 } from "./components/table";
 
 export {
@@ -64,6 +68,8 @@ export { Pagination } from "./components/Pagination";
 export type { PaginationProps } from "./components/Pagination";
 export { ProductCard } from "./components/ProductCard";
 export type { ProductCardProps, ProductItem, ProductBadge, ProductBadgeType } from "./components/ProductCard";
+export { ProductCardSkeleton } from "./components/ProductCardSkeleton";
+export type { ProductCardSkeletonProps } from "./components/ProductCardSkeleton";
 export { PageHeader } from "./components/PageHeader";
 export type { PageHeaderProps } from "./components/PageHeader";
 export { Button } from "./components/Button";

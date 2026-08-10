@@ -65,16 +65,57 @@ export async function createDiscountApi(payload: {
   };
 }
 
+export async function updateDiscountApi(
+  id: string,
+  payload: {
+    code?: string;
+    type?: string;
+    value?: number;
+    is_active?: boolean;
+    min_requirement_type?: string;
+    min_requirement_value?: number;
+    active_start_date?: string;
+    active_end_date?: string;
+  }
+): Promise<DiscountRecord> {
+  const result = await apiClient.request<any>(ENDPOINTS.DISCOUNT.UPDATE(id), undefined, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+
+  const resolvedType = result.type || payload.type || "Percentage";
+  const resolvedValue = result.value ?? payload.value ?? 0;
+
+  return {
+    id: result.id || id,
+    code: result.code || payload.code || "",
+    type: resolvedType,
+    value:
+      resolvedType === "Free Shipping"
+        ? "Free Shipping"
+        : resolvedType === "Fixed Amount"
+          ? `$${resolvedValue}.00 OFF`
+          : `${resolvedValue}% OFF`,
+    status: (result.is_active ?? payload.is_active) ? "Active" : "Scheduled",
+    startDate: result.active_start_date || payload.active_start_date || new Date().toISOString().split("T")[0],
+    endDate: result.active_end_date || payload.active_end_date || undefined,
+    minRequirementType: (result.min_requirement_type || payload.min_requirement_type || "none") as any,
+    minRequirementValue: (result.min_requirement_value || payload.min_requirement_value)
+      ? String(result.min_requirement_value || payload.min_requirement_value)
+      : undefined,
+  };
+}
+
 export async function deleteDiscountApi(id: string): Promise<void> {
   await apiClient.request(ENDPOINTS.DISCOUNT.DELETE(id), undefined, {
     method: "DELETE",
   });
 }
 
-export function isDiscountCodeTaken(code: string, discounts: DiscountRecord[], excludeId?: string): boolean {
+export function isDiscountCodeTaken(code: string, discounts: { code: string; id?: string }[], excludeId?: string): boolean {
   const normalized = code.trim().toUpperCase();
   if (!normalized) return false;
   return discounts.some(
-    (d) => d.code.trim().toUpperCase() === normalized && d.id !== excludeId
+    (d) => d.code && d.code.trim().toUpperCase() === normalized && d.id !== excludeId
   );
 }

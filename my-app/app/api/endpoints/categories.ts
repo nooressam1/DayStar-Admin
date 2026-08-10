@@ -29,4 +29,27 @@ export class categoryApi {
       throw error;
     }
   }
+
+  static async updateCategory(id: string, payload: Partial<Category>): Promise<Category> {
+    try {
+      return await apiClient.request<Category>(ENDPOINTS.CATEGORY.BY_ID(id), undefined, {
+        method: "PATCH",
+        body: JSON.stringify(payload),
+      });
+    } catch (error) {
+      console.error(`Error updating category ${id}:`, error);
+      throw error;
+    }
+  }
+
+  static async deleteCategory(id: string): Promise<{ success: boolean }> {
+    try {
+      return await apiClient.request<{ success: boolean }>(ENDPOINTS.CATEGORY.BY_ID(id), undefined, {
+        method: "DELETE",
+      });
+    } catch (error) {
+      console.error(`Error deleting category ${id}:`, error);
+      throw error;
+    }
+  }
 }

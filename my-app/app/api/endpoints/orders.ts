@@ -39,4 +39,45 @@ export class orderApi {
       return null;
     }
   }
+
+  static async updateAdminOrderStatus(
+    id: string,
+    status: string,
+    reason?: string
+  ): Promise<{ success: boolean; message: string }> {
+    return await apiClient.request<{ success: boolean; message: string }>(
+      `/orders/admin/${id}/status`,
+      undefined,
+      {
+        method: "PATCH",
+        body: JSON.stringify({ status, reason }),
+      }
+    );
+  }
+
+  static async cancelAdminOrder(
+    id: string,
+    reason?: string
+  ): Promise<{ success: boolean; message: string }> {
+    return await apiClient.request<{ success: boolean; message: string }>(
+      `/orders/admin/${id}/cancel`,
+      undefined,
+      {
+        method: "PATCH",
+        body: JSON.stringify({ reason }),
+      }
+    );
+  }
+
+  static async completePaymentAdminOrder(
+    id: string
+  ): Promise<{ success: boolean; message: string }> {
+    return await apiClient.request<{ success: boolean; message: string }>(
+      `/orders/admin/${id}/complete-payment`,
+      undefined,
+      {
+        method: "PATCH",
+      }
+    );
+  }
 }

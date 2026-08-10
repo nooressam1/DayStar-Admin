@@ -13,10 +13,16 @@ import {
   useUrlFilterState,
   useDebounce,
   usePagination,
+  StatusBadge,
 } from "@/modules/shared";
 import { Discount } from "@/types";
-import { fetchDiscountsApi, deleteDiscountApi } from "../utils/discountStorage";
+import { EditDiscountModal } from "../components/EditDiscountModal";
 import { DISCOUNT_STATUS_OPTIONS, DISCOUNT_TYPE_OPTIONS } from "../constants/discountFilters";
+import {
+  useGetDiscounts,
+  useUpdateDiscount,
+  useDeleteDiscount,
+} from "@/app/api/hooks/useDiscounts";
 
 const DISCOUNT_FILTERS = [
   { key: "status", defaultValue: "All Statuses" },
@@ -40,10 +46,33 @@ export interface DiscountRecord extends Partial<Discount> {
 
 export function DiscountPage() {
   const router = useRouter();
-  const [discounts, setDiscounts] = useState<DiscountRecord[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { data: rawDiscounts = [], isLoading } = useGetDiscounts();
+  const updateDiscountMutation = useUpdateDiscount();
+  const deleteDiscountMutation = useDeleteDiscount();
+
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  // Transform raw backend response into DiscountRecord format
+  const discounts: DiscountRecord[] = useMemo(() => {
+    if (!Array.isArray(rawDiscounts)) return [];
+    return rawDiscounts.map((d) => ({
+      id: d.id,
+      code: d.code,
+      type: d.type,
+      value:
+        d.type === "Free Shipping"
+          ? "Free Shipping"
+          : d.type === "Fixed Amount"
+            ? `$${d.value}.00 OFF`
+            : `${d.value}% OFF`,
+      status: d.is_active ? "Active" : "Scheduled",
+      startDate: d.active_start_date || "2026-06-01",
+      endDate: d.active_end_date || undefined,
+      minRequirementType: d.min_requirement_type || "none",
+      minRequirementValue: d.min_requirement_value ? String(d.min_requirement_value) : undefined,
+    }));
+  }, [rawDiscounts]);
 
   // ── URL-synced filter state ──
   const {
@@ -76,14 +105,6 @@ export function DiscountPage() {
     }
   }, [debouncedSearch, filterValues.search, setFilter]);
 
-  // ── Fetch discounts on mount ──
-  useEffect(() => {
-    setIsLoading(true);
-    fetchDiscountsApi()
-      .then(setDiscounts)
-      .finally(() => setIsLoading(false));
-  }, []);
-
   // ── Local filtering using URL filter state and debounced search ──
   const filteredDiscounts = useMemo(() => {
     return discounts.filter((d) => {
@@ -113,23 +134,16 @@ export function DiscountPage() {
 
   const handleDeleteDiscount = async () => {
     if (!deletingId) return;
-    await deleteDiscountApi(deletingId);
-    setDiscounts((prev) => prev.filter((d) => d.id !== deletingId));
-    setDeletingId(null);
-  };
-
-  const getStatusBadge = (status: DiscountRecord["status"]) => {
-    switch (status) {
-      case "Active":
-        return "bg-[#50E3C2]/20 text-[#044E35] border border-[#50E3C2]/40";
-      case "Scheduled":
-        return "bg-[#E0E7FF] text-[#3730A3] border border-[#C7D2FE]";
-      case "Expired":
-        return "bg-stone-100 text-stone-600 border border-stone-200";
-      default:
-        return "bg-stone-100 text-stone-700";
+    try {
+      await deleteDiscountMutation.mutateAsync(deletingId);
+      setDeletingId(null);
+    } catch (err) {
+      console.error("Failed to delete discount:", err);
     }
   };
+
+  // ── Edit Modal State ──
+  const [editingDiscount, setEditingDiscount] = useState<DiscountRecord | null>(null);
 
   const discountConfig: FilterConfig[] = useMemo(
     () => [
@@ -194,13 +208,7 @@ export function DiscountPage() {
       key: "status",
       header: "STATUS",
       accessor: (discount) => (
-        <span
-          className={`inline-block text-xs font-semibold px-3 py-1 rounded-full ${getStatusBadge(
-            discount.status
-          )}`}
-        >
-          {discount.status}
-        </span>
+        <StatusBadge status={discount.status} />
       ),
     },
     {
@@ -227,6 +235,21 @@ export function DiscountPage() {
       align: "right",
       accessor: (discount) => (
         <div className="flex items-center justify-end gap-1.5">
+          <button
+            onClick={() => setEditingDiscount(discount)}
+            title="Edit Discount"
+            className="p-1.5 rounded-lg text-[#583F37] hover:bg-[#FAF5F2] border border-transparent hover:border-[#E9E3DE] transition-colors cursor-pointer"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.8}
+                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+              />
+            </svg>
+          </button>
+
           <button
             onClick={() => setDeletingId(discount.id)}
             title="Delete Discount"
@@ -314,6 +337,14 @@ export function DiscountPage() {
           Are you sure you want to delete this discount campaign? This action cannot be undone.
         </p>
       </Modal>
+
+      {/* Edit Discount Modal */}
+      <EditDiscountModal
+        discount={editingDiscount}
+        isOpen={Boolean(editingDiscount)}
+        onClose={() => setEditingDiscount(null)}
+        discountsList={discounts}
+      />
     </div>
   );
 }

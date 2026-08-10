@@ -7,6 +7,7 @@ import {
   Filter,
   ViewMode,
   ProductCard,
+  ProductCardSkeleton,
   ProductItem,
   Pagination,
 } from "@/modules/shared";
@@ -132,8 +133,10 @@ export function ProductPage() {
         </div>
       )}
       {isLoading && (
-        <div className="py-12 text-center text-gray-500 font-medium">
-          Loading products from server...
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[...Array(8)].map((_, index) => (
+            <ProductCardSkeleton key={index} />
+          ))}
         </div>
       )}
       {isError && (
