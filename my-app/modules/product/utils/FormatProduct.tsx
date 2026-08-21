@@ -49,10 +49,25 @@ export function formatProductForCard(item: any): ProductItem {
     ? item.category.name || item.category_name || "GENERAL"
     : item.category?.name || item.category_name || (typeof item.category === "string" ? item.category : "GENERAL");
   const images: string[] = Array.isArray(item.images) ? item.images : [];
-  const variants: Array<{ stock?: number; sku?: string }> = Array.isArray(item.variants) ? item.variants : [];
-  const totalStock = variants.length > 0
-    ? variants.reduce((sum, v) => sum + (Number(v.stock) || 0), 0)
-    : (item.stockCount ?? item.stock ?? 0);
+  
+  // Calculate total stock across all variants or fallback to product-level stock
+  let totalStock = 0;
+  if (Array.isArray(item.variants) && item.variants.length > 0) {
+    totalStock = item.variants.reduce((sum: number, v: any) => sum + (Number(v?.stock) || 0), 0);
+  } else if (item.variants && typeof item.variants === "object" && item.variants.stock !== undefined) {
+    totalStock = Number(item.variants.stock) || 0;
+  } else {
+    totalStock = Number(item.stockCount ?? item.stock ?? item.stock_quantity ?? item.inventory ?? 0) || 0;
+  }
+
+  // Determine active status
+  const isActive = item.is_active !== undefined
+    ? Boolean(item.is_active)
+    : item.isActive !== undefined
+    ? Boolean(item.isActive)
+    : item.status !== undefined
+    ? item.status === "Active" || item.status === "active"
+    : true;
 
   let badge = item.badge;
   if (!badge && isOnSale) {
@@ -67,11 +82,12 @@ export function formatProductForCard(item: any): ProductItem {
     name: item.name || "Untitled Product",
     category: categoryName,
     category_id: item.category_id || null,
-    sku: item.sku || variants[0]?.sku || (item.slug ? item.slug.toUpperCase() : "SKU-001"),
+    sku: item.sku || (Array.isArray(item.variants) && item.variants[0]?.sku) || (item.slug ? item.slug.toUpperCase() : "SKU-001"),
     price: activePrice,
     originalPrice: originalPrice,
     stockCount: totalStock,
     images,
     badge,
+    isActive,
   };
 }

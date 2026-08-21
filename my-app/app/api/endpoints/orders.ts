@@ -74,4 +74,16 @@ export class orderApi {
       }
     );
   }
+
+  static async completeDeliveryAdminOrder(
+    id: string
+  ): Promise<{ success: boolean; message: string }> {
+    return await apiClient.request<{ success: boolean; message: string }>(
+      `/orders/admin/${id}/complete-delivery`,
+      undefined,
+      {
+        method: "PATCH",
+      }
+    );
+  }
 }

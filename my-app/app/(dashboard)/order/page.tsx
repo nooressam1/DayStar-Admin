@@ -1,5 +1,10 @@
+﻿import { Suspense } from "react";
 import { OrderPage } from "@/modules/order/index";
 
 export default function OrderRoute() {
-  return <OrderPage />;
+  return (
+    <Suspense>
+      <OrderPage />
+    </Suspense>
+  );
 }

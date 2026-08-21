@@ -67,9 +67,13 @@ export function ProductVariantsCard({
               <label className="block text-[10px] font-bold text-[#7A6860] uppercase mb-0.5">STOCK</label>
               <input
                 type="number"
-                value={v.stock}
-                onChange={(e) => onUpdateVariant(v.id, "stock", parseInt(e.target.value, 10) || 0)}
-                placeholder="Stock"
+                min="0"
+                value={v.stock !== undefined && v.stock !== null ? v.stock : 0}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  onUpdateVariant(v.id, "stock", val === "" ? ("" as any) : Math.max(0, parseInt(val, 10) || 0));
+                }}
+                placeholder="0"
                 className="w-full text-xs border border-[#E9E3DE] rounded-lg p-2 bg-white text-[#3D2E28] font-semibold"
               />
             </div>

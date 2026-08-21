@@ -21,23 +21,30 @@ export function OrderPriceSummaryCard({
   total,
   subtotal = 0,
   discount = 0,
-  deliveryFee = 0,
-  paymentMethodText = "Cash on Delivery",
+  paymentMethodText,
   paymentStatus,
   orderStatus,
   status = "Pending",
   isRefunded = false,
   className = "",
 }: OrderPriceSummaryCardProps) {
-  const calculatedTotal = total ?? (subtotal - discount + deliveryFee);
+  const calculatedTotal = total ?? (subtotal - discount);
   const displaySubtotal = subtotal || calculatedTotal;
   const currentOrderStatus = orderStatus || status;
   const orderStatusUpper = (currentOrderStatus || "").toUpperCase();
 
-  const isCOD =
-    paymentMethodText.toLowerCase().includes("cash") ||
-    paymentMethodText.toLowerCase().includes("cod");
-  const isCard = !isCOD;
+  const rawMethod = (paymentMethodText || "").toLowerCase().trim();
+  const isCard =
+    rawMethod === "card" ||
+    rawMethod.includes("card") ||
+    rawMethod.includes("online") ||
+    rawMethod.includes("credit") ||
+    rawMethod.includes("debit") ||
+    paymentStatus?.toLowerCase() === "paid";
+
+  const displayPaymentMethod = isCard
+    ? "Credit / Debit Card"
+    : "Cash on Delivery";
 
   // Resolved payment status logic:
   // - If order is explicitly Refunded -> "Refunded"
@@ -89,12 +96,6 @@ export function OrderPriceSummaryCard({
               <span className="font-semibold text-[#3D2E28]">{formatMoney(discount)}</span>
             </div>
           )}
-          {deliveryFee > 0 && (
-            <div className="flex justify-between items-center text-[#6E5B53]">
-              <span>Delivery fee</span>
-              <span className="font-semibold text-[#3D2E28]">{formatMoney(deliveryFee)}</span>
-            </div>
-          )}
           <div className="flex justify-between items-center text-[#6E5B53] pt-1 border-t border-[#F5EFEA] mt-2">
             <span className="font-bold text-[#583F37]">Total Price</span>
             <span className="font-bold text-[#583F37] text-base">{formatMoney(calculatedTotal)}</span>
@@ -110,7 +111,7 @@ export function OrderPriceSummaryCard({
         <div className="space-y-3 text-sm">
           <div>
             <p className="text-xs text-[#8A756C] font-medium mb-1">Payment Method</p>
-            <p className="font-semibold text-[#3D2E28]">{paymentMethodText}</p>
+            <p className="font-semibold text-[#3D2E28]">{displayPaymentMethod}</p>
           </div>
 
           <div className="flex flex-col gap-2">

@@ -2,6 +2,7 @@
 
 import { formatMoney } from "@/utils/format";
 import React from "react";
+import { StatusBadge } from "./StatusBadge";
 
 export type ProductBadgeType = "on_sale" | "out_of_stock" | "low_stock" | "new_arrival";
 
@@ -21,6 +22,7 @@ export interface ProductItem {
   stockCount: number;
   images: string[];
   badge?: ProductBadge;
+  isActive?: boolean;
 }
 
 export interface ProductCardProps {
@@ -71,13 +73,14 @@ export function ProductCard({
   };
 
   const getStockIndicator = (count: number) => {
-    if (count === 0) {
-      return { dot: "bg-[#DC2626]", text: "Out of Stock" };
+    const safeCount = typeof count === "number" ? count : Number(count) || 0;
+    if (safeCount <= 0) {
+      return { dot: "bg-[#DC2626]", text: "0 in Stock" };
     }
-    if (count <= 10) {
-      return { dot: "bg-[#D97706]", text: `${count} Low Stock` };
+    if (safeCount <= 10) {
+      return { dot: "bg-[#D97706]", text: `${safeCount} Low Stock` };
     }
-    return { dot: "bg-[#059669]", text: `${count} In Stock` };
+    return { dot: "bg-[#059669]", text: `${safeCount} in Stock` };
   };
 
   const stockInfo = getStockIndicator(product.stockCount);
@@ -89,7 +92,7 @@ export function ProductCard({
         } ${isSelected
           ? "border-[#004956] ring-2 ring-[#004956] shadow-md"
           : "border-[#E9E3DE] hover:border-[#CBD5E1]"
-        } ${className}`}
+        } ${product.isActive === false ? "opacity-90" : ""} ${className}`}
     >
       {/* Product Image Area */}
       <div className="relative h-48 w-full bg-[#FAF5F2] overflow-hidden flex items-center justify-center shrink-0">
@@ -118,21 +121,24 @@ export function ProductCard({
           </div>
         )}
 
-        {/* Badge Overlay */}
-        {product.badge && (
-          <div className="absolute top-3 left-3 z-10">
-            {(() => {
-              const badgeStyle = getBadgeStyle(product.badge);
-              return (
-                <span
-                  className={`text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-wider ${badgeStyle.bg}`}
-                >
-                  {badgeStyle.text}
-                </span>
-              );
-            })()}
-          </div>
-        )}
+        {/* Top-Left Badges: Status & Promo Badge */}
+        <div className="absolute top-3 left-3 z-10 flex flex-col items-start gap-1.5">
+          <StatusBadge
+            status={product.isActive !== false ? "ACTIVE" : "INACTIVE"}
+            size="sm"
+            dot
+            className="shadow-xs backdrop-blur-xs"
+          />
+          {product.badge && (
+            <span
+              className={`text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-wider shadow-xs ${
+                getBadgeStyle(product.badge).bg
+              }`}
+            >
+              {getBadgeStyle(product.badge).text}
+            </span>
+          )}
+        </div>
 
         {/* Select Checkbox Overlay */}
         {selectable && (
@@ -155,13 +161,13 @@ export function ProductCard({
       <div className="p-4 flex flex-col gap-2 flex-1 justify-between">
         <div className="flex flex-col gap-1">
           {/* Category & Stock Row */}
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-[#7A675E]">
+          <div className="flex items-center justify-between text-xs gap-2">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-[#7A675E] truncate">
               {typeof product.category === "object" && product.category !== null
                 ? (product.category as any).name || "GENERAL"
                 : String(product.category || "GENERAL")}
             </span>
-            <div className="flex items-center gap-1.5 font-medium text-[#4A3831]">
+            <div className="flex items-center gap-1.5 font-medium text-[#4A3831] shrink-0">
               <span className={`w-2 h-2 rounded-full ${stockInfo.dot}`} />
               <span>{stockInfo.text}</span>
             </div>

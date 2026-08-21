@@ -10,9 +10,10 @@ import { StatusBadge } from "./StatusBadge";
 
 export interface RecentOrderItem {
   id: string;
+  displayId?: string;
   customerName: string;
   customerInitials?: string;
-  status: OrderStatus;
+  status: OrderStatus | string;
   amount: string;
 }
 
@@ -84,6 +85,12 @@ export function RecentOrdersTable({
                   </td>
                 </tr>
               ))
+            ) : orders.length === 0 ? (
+              <tr>
+                <td colSpan={4} className="px-6 py-8 text-center text-sm text-[#8A756C]">
+                  No recent orders found.
+                </td>
+              </tr>
             ) : (
               orders.map((order) => (
                 <tr
@@ -92,7 +99,12 @@ export function RecentOrdersTable({
                 >
                   {/* Order ID */}
                   <td className="px-6 py-4 text-sm font-medium text-[#3D2E28] whitespace-nowrap">
-                    {order.id}
+                    <Link
+                      href={`/order/${order.id}`}
+                      className="text-[#30457A] hover:underline font-semibold"
+                    >
+                      {order.displayId || order.id}
+                    </Link>
                   </td>
 
                   {/* Customer */}

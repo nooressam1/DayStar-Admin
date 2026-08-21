@@ -106,7 +106,13 @@ export function DiscountPage() {
           : d.type === "Fixed Amount"
             ? `$${d.value}.00 OFF`
             : `${d.value}% OFF`,
-      status: d.is_active ? "Active" : "Scheduled",
+      status: (() => {
+        const now = new Date();
+        if (d.active_end_date && new Date(d.active_end_date) < now) return "Expired";
+        if (!d.is_active) return "Scheduled";
+        if (d.active_start_date && new Date(d.active_start_date) > now) return "Scheduled";
+        return "Active";
+      })(),
       startDate: d.active_start_date || "2026-06-01",
       endDate: d.active_end_date || undefined,
       minRequirementType: d.min_requirement_type || "none",

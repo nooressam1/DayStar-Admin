@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useMemo, useCallback, useState, useEffect } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { PageHeader, Filter, FilterConfig, Table, Pagination, useDebounce } from "@/modules/shared";
 import { useUrlFilterState } from "@/modules/shared/hooks/useUrlFilterState";
@@ -16,6 +15,7 @@ const ORDER_FILTERS = [
   { key: "search", defaultValue: "" },
 ];
 
+const ITEMS_PER_PAGE = 10;
 const extractOrderKey = (order: Order) => order.id;
 
 export function OrderPage() {
@@ -26,10 +26,9 @@ export function OrderPage() {
     filterValues,
     setFilter,
     currentPage,
-    itemsPerPage,
   } = useUrlFilterState({
     filters: ORDER_FILTERS,
-    itemsPerPage: 10,
+    itemsPerPage: ITEMS_PER_PAGE,
   });
 
   const statusFilter = filterValues.status;
@@ -39,19 +38,16 @@ export function OrderPage() {
   const debouncedSearch = useDebounce(localSearch, 350);
 
   useEffect(() => {
-    setLocalSearch(filterValues.search || "");
-  }, [filterValues.search]);
-
-  useEffect(() => {
-    if (debouncedSearch !== filterValues.search) {
+    if (debouncedSearch !== (filterValues.search || "")) {
       setFilter("search", debouncedSearch);
+      setFilter("page", 1);
     }
   }, [debouncedSearch, filterValues.search, setFilter]);
 
   // ── Fetch orders from API (server-side filtering + pagination) ──
   const { data: response, isLoading, isError, error, refetch } = useGetAdminOrders({
     page: currentPage,
-    limit: itemsPerPage,
+    limit: ITEMS_PER_PAGE,
     ...(statusFilter !== "All Statuses" ? { status: statusFilter.toLowerCase() } : {}),
     ...(debouncedSearch ? { search: debouncedSearch } : {}),
   });
@@ -59,7 +55,14 @@ export function OrderPage() {
   // ── Memoized derived values ──
   const orders = useMemo(() => response?.items || [], [response]);
   const totalItems = useMemo(() => response?.total || 0, [response]);
-  const totalPages = useMemo(() => Math.max(1, Math.ceil(totalItems / itemsPerPage)), [totalItems, itemsPerPage]);
+  const totalPages = useMemo(() => Math.max(1, Math.ceil(totalItems / ITEMS_PER_PAGE)), [totalItems]);
+
+  // Clamp current page if totalItems > 0 and currentPage > totalPages
+  useEffect(() => {
+    if (totalItems > 0 && currentPage > totalPages) {
+      setFilter("page", 1);
+    }
+  }, [currentPage, totalPages, totalItems, setFilter]);
 
   const errorMessage = useMemo(() => {
     if (!error) return "Network error or request timeout.";
@@ -75,7 +78,10 @@ export function OrderPage() {
       key: "status",
       type: "select",
       value: statusFilter,
-      onChange: (val: string) => setFilter("status", val),
+      onChange: (val: string) => {
+        setFilter("status", val);
+        setFilter("page", 1);
+      },
       options: ORDER_STATUS_OPTIONS,
     },
     {
@@ -140,12 +146,12 @@ export function OrderPage() {
             emptyText="No orders match your filter criteria."
           />
 
-          {!isLoading && totalPages > 1 && (
+          {!isLoading && totalItems > 0 && (
             <Pagination
               currentPage={currentPage}
               totalPages={totalPages}
               totalItems={totalItems}
-              itemsPerPage={itemsPerPage}
+              itemsPerPage={ITEMS_PER_PAGE}
               onPageChange={handlePageChange}
               itemLabel="orders"
             />

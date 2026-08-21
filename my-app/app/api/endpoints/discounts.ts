@@ -36,9 +36,16 @@ export class discountsApi {
         }
       );
 
+      if (Array.isArray(res)) {
+        return {
+          items: res,
+          total: res.length,
+        };
+      }
+
       return {
         items: res?.items || [],
-        total: res?.total || 0,
+        total: res?.total ?? 0,
       };
     } catch (error) {
       console.error("Error fetching discounts:", error);

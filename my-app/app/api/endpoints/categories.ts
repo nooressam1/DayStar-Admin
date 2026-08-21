@@ -6,14 +6,51 @@ export class categoryApi {
     params?: CategoryQueryParams
   ): Promise<{ items: Category[]; total: number }> {
     try {
-      const res = await apiClient.request<{ items: Category[]; total: number }>(
+      const res = await apiClient.request<any>(
         ENDPOINTS.CATEGORY.LIST,
         serializeQueryParams(params)
       );
 
+      let items: Category[] = [];
+
+      if (Array.isArray(res)) {
+        items = res;
+      } else if (res && Array.isArray(res.items)) {
+        items = res.items;
+      } else if (res && Array.isArray(res.data)) {
+        items = res.data;
+      }
+
+      if (params?.search) {
+        const q = params.search.toLowerCase().trim();
+        items = items.filter(
+          (c) =>
+            c.name?.toLowerCase().includes(q) ||
+            c.slug?.toLowerCase().includes(q)
+        );
+      }
+
+      if (params?.status && params.status !== "All Statuses") {
+        const targetStatus = params.status.toLowerCase().trim();
+        items = items.filter((c) => {
+          const catStatus = typeof c.status === "boolean"
+            ? (c.status ? "active" : "inactive")
+            : String(c.status || "active").toLowerCase().trim();
+          return catStatus === targetStatus;
+        });
+      }
+
+      const total = items.length;
+      const page = params?.page;
+      const limit = params?.limit;
+
+      const paginatedItems = page && limit
+        ? items.slice((page - 1) * limit, page * limit)
+        : items;
+
       return {
-        items: res?.items || [],
-        total: res?.total || 0,
+        items: paginatedItems,
+        total,
       };
     } catch (error) {
       console.error("Error fetching categories:", error);
@@ -28,6 +65,7 @@ export class categoryApi {
       return null;
     }
   }
+
   static async createCategory(payload: Partial<Category>): Promise<Category> {
     try {
       return await apiClient.request<Category>(ENDPOINTS.CATEGORY.LIST, undefined, {

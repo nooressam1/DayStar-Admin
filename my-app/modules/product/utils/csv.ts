@@ -7,11 +7,11 @@ export function exportProductsToCSV(
 ): void {
   if (!products || products.length === 0) return;
 
-  const headers = "ID,Name,Category,SKU,Price,Stock\n";
+  const headers = "ID,Name,Category,SKU,Price,Stock,Status\n";
   const rows = products
     .map(
       (p) =>
-        `"${p.id}","${p.name}","${p.category}","${p.sku}","${formatMoney(p.price)}",${p.stockCount}`
+        `"${p.id}","${p.name}","${p.category}","${p.sku}","${formatMoney(p.price)}",${p.stockCount},"${p.isActive !== false ? "Active" : "Inactive"}"`
     )
     .join("\n");
 

@@ -73,3 +73,19 @@ export const useCompletePaymentAdminOrder = () => {
     },
   });
 };
+
+export const useCompleteDeliveryAdminOrder = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    { success: boolean; message: string },
+    Error,
+    string
+  >({
+    mutationFn: (id: string) => orderApi.completeDeliveryAdminOrder(id),
+    onSuccess: (_, id) => {
+      queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-order", id] });
+    },
+  });
+};

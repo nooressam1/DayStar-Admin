@@ -36,5 +36,7 @@ export const ENDPOINTS = {
   },
   CONTACT: {
     SUBMIT: "/contact_submissions",
+    LIST: "/contact_submissions",
+    UPDATE: (id: string) => `/contact_submissions/${id}`,
   },
 } as const;

@@ -1,20 +1,26 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { PageHeader, Modal, Button, StatusBadge } from "@/modules/shared";
 import { OrderedItemsTable } from "../components/OrderedItemsTable";
 import { OrderPriceSummaryCard } from "../components/OrderPriceSummaryCard";
 import { OrderCustomerDetailsCard } from "../components/OrderCustomerDetailsCard";
+import { OrderDetailSkeleton } from "../components/OrderDetailSkeleton";
 import { OrderWithDetails } from "@/types";
 import {
   useGetAdminOrder,
   useCancelAdminOrder,
   useCompletePaymentAdminOrder,
+  useCompleteDeliveryAdminOrder,
   useUpdateAdminOrderStatus,
 } from "@/app/api/hooks/useOrders";
+import { Printer, Check, RotateCcw, X } from "lucide-react";
 import { formatMoney, formatDate } from "@/utils/format";
+import { calculateSubtotal } from "../utils/orderCalculations";
+
+type ModalType = "cancel" | "completePayment" | "completeDelivery" | "refund" | null;
 
 export function OrderDetailPage({ orderId: propOrderId }: { orderId?: string }) {
   const params = useParams();
@@ -24,25 +30,13 @@ export function OrderDetailPage({ orderId: propOrderId }: { orderId?: string }) 
   const { data: fetchedOrder, isLoading, isError, error, refetch } = useGetAdminOrder(cleanId);
   const cancelOrderMutation = useCancelAdminOrder();
   const completePaymentMutation = useCompletePaymentAdminOrder();
+  const completeDeliveryMutation = useCompleteDeliveryAdminOrder();
   const updateOrderStatusMutation = useUpdateAdminOrderStatus();
 
-  const [showCancelModal, setShowCancelModal] = useState(false);
-  const [showCompletePaymentModal, setShowCompletePaymentModal] = useState(false);
-  const [showRefundModal, setShowRefundModal] = useState(false);
-  const [currentStatus, setCurrentStatus] = useState<string>("Pending");
-
-  useEffect(() => {
-    if (fetchedOrder?.status) {
-      setCurrentStatus(fetchedOrder.status);
-    }
-  }, [fetchedOrder]);
+  const [activeModal, setActiveModal] = useState<ModalType>(null);
 
   if (isLoading) {
-    return (
-      <div className="py-24 text-center text-[#8A756C] font-medium">
-        Loading order details...
-      </div>
-    );
+    return <OrderDetailSkeleton />;
   }
 
   if (isError || !fetchedOrder) {
@@ -65,6 +59,7 @@ export function OrderDetailPage({ orderId: propOrderId }: { orderId?: string }) 
   }
 
   const orderData: OrderWithDetails = fetchedOrder;
+  const currentStatus = fetchedOrder?.status ?? "Pending";
   const statusLower = currentStatus.toLowerCase();
   const isCancelled = statusLower === "cancelled" || statusLower === "refunded";
   const isDelivered = statusLower === "delivered" || statusLower === "completed";
@@ -95,8 +90,7 @@ export function OrderDetailPage({ orderId: propOrderId }: { orderId?: string }) 
       await cancelOrderMutation.mutateAsync({
         id: cleanId,
       });
-      setCurrentStatus("Cancelled");
-      setShowCancelModal(false);
+      setActiveModal(null);
     } catch (err) {
       console.error("Failed to cancel order:", err);
     }
@@ -105,10 +99,18 @@ export function OrderDetailPage({ orderId: propOrderId }: { orderId?: string }) 
   const handleConfirmCompletePayment = async () => {
     try {
       await completePaymentMutation.mutateAsync(cleanId);
-      setCurrentStatus("Delivered");
-      setShowCompletePaymentModal(false);
+      setActiveModal(null);
     } catch (err) {
       console.error("Failed to complete payment:", err);
+    }
+  };
+
+  const handleConfirmCompleteDelivery = async () => {
+    try {
+      await completeDeliveryMutation.mutateAsync(cleanId);
+      setActiveModal(null);
+    } catch (err) {
+      console.error("Failed to complete delivery:", err);
     }
   };
 
@@ -118,8 +120,7 @@ export function OrderDetailPage({ orderId: propOrderId }: { orderId?: string }) 
         id: cleanId,
         status: "Refunded",
       });
-      setCurrentStatus("Refunded");
-      setShowRefundModal(false);
+      setActiveModal(null);
     } catch (err) {
       console.error("Failed to refund order:", err);
     }
@@ -135,9 +136,7 @@ export function OrderDetailPage({ orderId: propOrderId }: { orderId?: string }) 
 
   const displayOrderNumber = `#${orderData.order_number}`;
 
-  const calculatedSubtotal = orderData.items && orderData.items.length > 0
-    ? orderData.items.reduce((sum, item) => sum + ((item.unit_price_snapshot || 0) * (item.quantity || 1)), 0)
-    : orderData.total;
+  const calculatedSubtotal = calculateSubtotal(orderData.items, orderData.total);
 
   const discountVal = (orderData as any).discount_amount ?? orderData.discount ?? 0;
 
@@ -161,16 +160,7 @@ export function OrderDetailPage({ orderId: propOrderId }: { orderId?: string }) 
             <Button
               variant="secondary"
               onClick={handlePrintPackingSlip}
-              icon={
-                <svg className="w-4 h-4 text-[#583F37]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1.8}
-                    d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
-                  />
-                </svg>
-              }
+              icon={<Printer className="w-4 h-4 text-[#583F37]" />}
             >
               Print Packing Slip
             </Button>
@@ -179,20 +169,23 @@ export function OrderDetailPage({ orderId: propOrderId }: { orderId?: string }) 
             {isCOD && !isCancelled && !isDelivered && (
               <Button
                 variant="primary"
-                onClick={() => setShowCompletePaymentModal(true)}
+                onClick={() => setActiveModal("completePayment")}
                 disabled={completePaymentMutation.isPending}
-                icon={
-                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                }
+                icon={<Check className="w-4 h-4 text-white" />}
               >
                 {completePaymentMutation.isPending ? "Updating..." : "Completed Payment"}
+              </Button>
+            )}
+
+            {/* Complete Delivery Button (Online Payment only) */}
+            {!isCOD && !isCancelled && !isDelivered && (
+              <Button
+                variant="primary"
+                onClick={() => setActiveModal("completeDelivery")}
+                disabled={completeDeliveryMutation.isPending}
+                icon={<Check className="w-4 h-4 text-white" />}
+              >
+                {completeDeliveryMutation.isPending ? "Updating..." : "Complete Delivery"}
               </Button>
             )}
 
@@ -200,18 +193,9 @@ export function OrderDetailPage({ orderId: propOrderId }: { orderId?: string }) 
             {canRefund && (
               <Button
                 variant="danger-outline"
-                onClick={() => setShowRefundModal(true)}
+                onClick={() => setActiveModal("refund")}
                 disabled={updateOrderStatusMutation.isPending}
-                icon={
-                  <svg className="w-4 h-4 text-[#C53030]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={1.8}
-                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                    />
-                  </svg>
-                }
+                icon={<RotateCcw className="w-4 h-4 text-[#C53030]" />}
               >
                 {updateOrderStatusMutation.isPending ? "Refunding..." : "Refund Order"}
               </Button>
@@ -221,18 +205,9 @@ export function OrderDetailPage({ orderId: propOrderId }: { orderId?: string }) 
             {!isCancelled && !isDelivered && (
               <Button
                 variant="danger-outline"
-                onClick={() => setShowCancelModal(true)}
+                onClick={() => setActiveModal("cancel")}
                 disabled={cancelOrderMutation.isPending}
-                icon={
-                  <svg className="w-4 h-4 text-[#C53030]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={1.8}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                }
+                icon={<X className="w-4 h-4 text-[#C53030]" />}
               >
                 Cancel Order
               </Button>
@@ -254,7 +229,6 @@ export function OrderDetailPage({ orderId: propOrderId }: { orderId?: string }) 
           total={orderData.total}
           subtotal={orderData.subtotal || calculatedSubtotal}
           discount={discountVal}
-          deliveryFee={orderData.delivery_fee}
           paymentMethodText={paymentMethod}
           orderStatus={currentStatus}
           isRefunded={statusLower === "refunded"}
@@ -271,8 +245,8 @@ export function OrderDetailPage({ orderId: propOrderId }: { orderId?: string }) 
 
       {/* Cancel Confirmation Modal */}
       <Modal
-        isOpen={showCancelModal}
-        onClose={() => setShowCancelModal(false)}
+        isOpen={activeModal === "cancel"}
+        onClose={() => setActiveModal(null)}
         onConfirm={handleConfirmCancel}
         title={`Cancel Order ${displayOrderNumber}`}
         subtitle={
@@ -303,8 +277,8 @@ export function OrderDetailPage({ orderId: propOrderId }: { orderId?: string }) 
 
       {/* Refund Confirmation Modal (Delivered Orders) */}
       <Modal
-        isOpen={showRefundModal}
-        onClose={() => setShowRefundModal(false)}
+        isOpen={activeModal === "refund"}
+        onClose={() => setActiveModal(null)}
         onConfirm={handleConfirmRefund}
         title={`Process Refund for ${displayOrderNumber}`}
         subtitle={`Are you sure you want to issue a full refund of ${formatMoney(orderData.total)} for this delivered order?`}
@@ -321,8 +295,8 @@ export function OrderDetailPage({ orderId: propOrderId }: { orderId?: string }) 
 
       {/* Completed Payment Modal (COD) */}
       <Modal
-        isOpen={showCompletePaymentModal}
-        onClose={() => setShowCompletePaymentModal(false)}
+        isOpen={activeModal === "completePayment"}
+        onClose={() => setActiveModal(null)}
         onConfirm={handleConfirmCompletePayment}
         title={`Complete Payment for ${displayOrderNumber}`}
         subtitle={`Confirm that Cash on Delivery payment of ${formatMoney(
@@ -336,10 +310,24 @@ export function OrderDetailPage({ orderId: propOrderId }: { orderId?: string }) 
           This action will mark the order as delivered and completed.
         </p>
       </Modal>
+
+      {/* Complete Delivery Modal (Online Payment) */}
+      <Modal
+        isOpen={activeModal === "completeDelivery"}
+        onClose={() => setActiveModal(null)}
+        onConfirm={handleConfirmCompleteDelivery}
+        title={`Complete Delivery for ${displayOrderNumber}`}
+        subtitle={`Confirm that this order has been successfully delivered to the customer.`}
+        confirmText="Confirm Delivery"
+        confirmVariant="primary"
+        maxWidth="md"
+      >
+        <p className="text-sm text-[#6E5B53]">
+          This action will mark the order as delivered and completed.
+        </p>
+      </Modal>
     </div>
   );
 }
 
 export default OrderDetailPage;
-
-
