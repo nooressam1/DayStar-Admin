@@ -4,8 +4,8 @@ import React from "react";
 import Link from "next/link";
 
 export interface PageHeaderProps {
-  title: string;
-  subtitle?: string;
+  title: React.ReactNode;
+  subtitle?: React.ReactNode;
   actions?: React.ReactNode;
   backLink?: {
     href: string;
@@ -24,7 +24,7 @@ export function PageHeader({
   return (
     <div className={`flex flex-col gap-4 ${className}`}>
       {backLink && (
-        <div>
+        <div className="print:hidden">
           <Link
             href={backLink.href}
             className="inline-flex items-center gap-2 text-sm font-medium text-[#7A6860] hover:text-[#4A352F] transition-colors"
@@ -50,7 +50,7 @@ export function PageHeader({
         </div>
 
         {actions && (
-          <div className="flex items-center gap-3 shrink-0 self-start sm:self-auto">
+          <div className="flex items-center gap-3 shrink-0 self-start sm:self-auto print:hidden">
             {actions}
           </div>
         )}

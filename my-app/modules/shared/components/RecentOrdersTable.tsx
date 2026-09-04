@@ -3,13 +3,17 @@
 import React from "react";
 import Link from "next/link";
 
-export type OrderStatus = "SHIPPED" | "PROCESSING" | "PENDING" | "CANCELLED" | "DELIVERED";
+import { OrderStatus } from "@/enums";
+import { getInitials } from "@/utils/format";
+
+import { StatusBadge } from "./StatusBadge";
 
 export interface RecentOrderItem {
   id: string;
+  displayId?: string;
   customerName: string;
   customerInitials?: string;
-  status: OrderStatus;
+  status: OrderStatus | string;
   amount: string;
 }
 
@@ -17,72 +21,17 @@ export interface RecentOrdersTableProps {
   title?: string;
   viewAllHref?: string;
   orders?: RecentOrderItem[];
+  isLoading?: boolean;
   className?: string;
 }
-
-const defaultOrders: RecentOrderItem[] = [
-  {
-    id: "#ORD-88210",
-    customerName: "Jane Doe",
-    customerInitials: "JD",
-    status: "SHIPPED",
-    amount: "$1,240.00",
-  },
-  {
-    id: "#ORD-88209",
-    customerName: "Marcus Smith",
-    customerInitials: "MS",
-    status: "PROCESSING",
-    amount: "$320.50",
-  },
-  {
-    id: "#ORD-88208",
-    customerName: "Laura Reed",
-    customerInitials: "LR",
-    status: "PENDING",
-    amount: "$89.00",
-  },
-  {
-    id: "#ORD-88207",
-    customerName: "Chris Kim",
-    customerInitials: "CK",
-    status: "SHIPPED",
-    amount: "$2,100.99",
-  },
-];
 
 export function RecentOrdersTable({
   title = "Recent Orders",
   viewAllHref = "/order",
-  orders = defaultOrders,
+  orders = [],
+  isLoading = false,
   className = "",
 }: RecentOrdersTableProps) {
-  const getStatusBadge = (status: OrderStatus) => {
-    switch (status) {
-      case "SHIPPED":
-      case "DELIVERED":
-        return "bg-[#80F2C5] text-[#085C3A]";
-      case "PROCESSING":
-        return "bg-[#D6E2FF] text-[#2546A3]";
-      case "PENDING":
-        return "bg-[#FFE0E0] text-[#A62424]";
-      case "CANCELLED":
-        return "bg-[#E2E8F0] text-[#475569]";
-      default:
-        return "bg-stone-100 text-stone-700";
-    }
-  };
-
-  const getInitials = (name: string, fallbackInitials?: string) => {
-    if (fallbackInitials) return fallbackInitials;
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .substring(0, 2);
-  };
-
   return (
     <div className={`bg-white rounded-2xl border border-[#E9E3DE] shadow-xs overflow-hidden ${className}`}>
       {/* Header Row */}
@@ -116,43 +65,70 @@ export function RecentOrdersTable({
             </tr>
           </thead>
           <tbody className="divide-y divide-[#F0E8E3]">
-            {orders.map((order) => (
-              <tr
-                key={order.id}
-                className="hover:bg-[#FAF6F4] transition-colors"
-              >
-                {/* Order ID */}
-                <td className="px-6 py-4 text-sm font-medium text-[#3D2E28] whitespace-nowrap">
-                  {order.id}
-                </td>
-
-                {/* Customer */}
-                <td className="px-6 py-4 text-sm text-[#3D2E28] whitespace-nowrap">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-[#E4EBF9] text-[#30457A] font-bold text-xs flex items-center justify-center shrink-0">
-                      {getInitials(order.customerName, order.customerInitials)}
+            {isLoading ? (
+              [...Array(5)].map((_, i) => (
+                <tr key={i} className="animate-pulse">
+                  <td className="px-6 py-4">
+                    <div className="w-20 h-4 bg-stone-200 rounded" />
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-stone-200 shrink-0" />
+                      <div className="w-32 h-4 bg-stone-200 rounded" />
                     </div>
-                    <span className="font-medium">{order.customerName}</span>
-                  </div>
-                </td>
-
-                {/* Status Badge */}
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span
-                    className={`inline-block text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-wider ${getStatusBadge(
-                      order.status
-                    )}`}
-                  >
-                    {order.status}
-                  </span>
-                </td>
-
-                {/* Amount */}
-                <td className="px-6 py-4 text-sm font-semibold text-[#3D2E28] whitespace-nowrap">
-                  {order.amount}
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="w-16 h-6 bg-stone-200 rounded-full" />
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="w-16 h-4 bg-stone-200 rounded" />
+                  </td>
+                </tr>
+              ))
+            ) : orders.length === 0 ? (
+              <tr>
+                <td colSpan={4} className="px-6 py-8 text-center text-sm text-[#8A756C]">
+                  No recent orders found.
                 </td>
               </tr>
-            ))}
+            ) : (
+              orders.map((order) => (
+                <tr
+                  key={order.id}
+                  className="hover:bg-[#FAF6F4] transition-colors"
+                >
+                  {/* Order ID */}
+                  <td className="px-6 py-4 text-sm font-medium text-[#3D2E28] whitespace-nowrap">
+                    <Link
+                      href={`/order/${order.id}`}
+                      className="text-[#30457A] hover:underline font-semibold"
+                    >
+                      {order.displayId || order.id}
+                    </Link>
+                  </td>
+
+                  {/* Customer */}
+                  <td className="px-6 py-4 text-sm text-[#3D2E28] whitespace-nowrap">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-[#E4EBF9] text-[#30457A] font-bold text-xs flex items-center justify-center shrink-0">
+                        {getInitials(order.customerName, order.customerInitials)}
+                      </div>
+                      <span className="font-medium">{order.customerName}</span>
+                    </div>
+                  </td>
+
+                  {/* Status Badge */}
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <StatusBadge status={order.status} size="sm" />
+                  </td>
+
+                  {/* Amount */}
+                  <td className="px-6 py-4 text-sm font-semibold text-[#3D2E28] whitespace-nowrap">
+                    {order.amount}
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>

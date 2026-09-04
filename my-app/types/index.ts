@@ -4,3 +4,6 @@ export * from "./discount.type";
 export * from "./orders.type";
 export * from "./address.type";
 export * from "./profile.type";
+export * from "./customer.type";
+export * from "./contact.type";
+

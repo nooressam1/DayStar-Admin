@@ -14,15 +14,44 @@ export interface Product {
   step_type?: string;
   discount_percentage?: number | null;
 }
+export interface ProductParams {
+  page?: number;
+  limit?: number;
+  category?: string;
+  categoryId?: string;
+  collection?: string;
+  search?: string;
+  discount?: number;
+  includeInactive?: boolean;
+  all?: boolean;
+}
+
+export interface CreateProductDto {
+  name: string;
+  description: string;
+  slug?: string;
+  category_id?: string | null;
+  images: string[];
+  price: number;
+  is_active?: boolean;
+  on_sale?: boolean;
+  discount_percentage?: number | null;
+  skin_type?: string[];
+  concern?: string[];
+  step_type?: string;
+  variants?: Omit<Variant, "id" | "product_id">[];
+}
 
 export interface Variant {
   id: string;
   product_id: string;
   size: string;
-  price: number;
   stock: number;
   sku: string;
+  created_at?: string;
 }
+
+export type ProductVariant = Omit<Variant, "product_id">;
 
 export interface Review {
   id: string;

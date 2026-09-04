@@ -1,10 +1,16 @@
 export interface Category {
   id: string;
   name: string;
-  photo: string;
+  photo?: string | null;
   slug: string;
+  status?: string;
   created_at?: string;
-  parent_id?: string | null;
-  description?: string | null;
-  is_visible?: boolean;
 }
+
+export interface CategoryQueryParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: string;
+}
+

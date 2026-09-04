@@ -4,48 +4,17 @@ import React from "react";
 import Link from "next/link";
 import {
   ProductCard,
+  ProductCardSkeleton,
   ProductItem,
+} from "@/modules/shared";
+import {
   BulkEditForm,
   BulkEditFormData,
-} from "@/modules/shared";
-
-const defaultSelectedProducts: ProductItem[] = [
-  {
-    id: "prod-1",
-    name: "Apex Pro Keyboard",
-    category: "ELECTRONICS",
-    sku: "KEY-092-B",
-    price: "$159.00",
-    originalPrice: "$179.00",
-    stockCount: 42,
-    badge: { type: "on_sale", label: "10% SALE" },
-  },
-  {
-    id: "prod-2",
-    name: "HydroSteel Bottle",
-    category: "HOME & OFFICE",
-    sku: "BOT-443-S",
-    price: "$34.50",
-    stockCount: 3,
-    badge: { type: "low_stock", label: "LOW STOCK" },
-  },
-  {
-    id: "prod-3",
-    name: "SonicFlow V2",
-    category: "ELECTRONICS",
-    sku: "AUD-221-W",
-    price: "$249.00",
-    stockCount: 128,
-  },
-  {
-    id: "prod-4",
-    name: "Urban Leather Pack",
-    category: "ACCESSORIES",
-    sku: "ACC-887-L",
-    price: "$185.00",
-    stockCount: 15,
-  },
-];
+} from "../components";
+import { useSearchParams, useRouter } from "next/navigation";
+import { useFilteredProducts } from "../hooks/useFilteredProducts";
+import { useBulkUpdateProducts } from "@/app/api/hooks/useProducts";
+import { productApi } from "@/app/api/endpoints/products";
 
 export interface BulkEditProductsPageProps {
   selectedProducts?: ProductItem[];
@@ -53,14 +22,69 @@ export interface BulkEditProductsPageProps {
 }
 
 export function BulkEditProductsPage({
-  selectedProducts = defaultSelectedProducts,
   onBackToProducts,
 }: BulkEditProductsPageProps) {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const rawIds = searchParams.get("ids") || "";
+  const selectedIds = React.useMemo(
+    () => (rawIds ? rawIds.split(",") : []),
+    [rawIds]
+  );
+
+  const { productsList, isLoading } = useFilteredProducts({ includeInactive: true });
+  const bulkUpdateMutation = useBulkUpdateProducts();
+
+  const displayProducts = React.useMemo(() => {
+    return productsList.filter((p) => selectedIds.includes(p.id));
+  }, [productsList, selectedIds]);
+
   const handleSave = (data: BulkEditFormData) => {
-    alert("Bulk updates saved successfully!");
-    if (onBackToProducts) {
-      onBackToProducts();
+    if (selectedIds.length === 0) {
+      alert("No products selected for bulk editing.");
+      return;
     }
+
+    const payload: Parameters<typeof productApi.bulkUpdateProducts>[0] = {
+      ids: selectedIds,
+    };
+
+    if (data.enabledSections.saleDetails) {
+      payload.on_sale = data.saleStatus === "Active";
+      if (data.saleStatus === "Active" && data.saleDiscountPercentage) {
+        const cleanDisc = data.saleDiscountPercentage.replace("%", "").trim();
+        payload.discount_percentage = parseFloat(cleanDisc) || null;
+      } else {
+        payload.discount_percentage = null;
+      }
+    }
+
+    if (data.enabledSections.productStatus) {
+      payload.is_active = data.productStatus === "Active";
+    }
+
+    if (data.enabledSections.skinQuiz) {
+      payload.skin_type = [data.skinType];
+      payload.concern = [data.productConcerns];
+      payload.step_type = data.productStepType;
+    }
+
+    if (data.enabledSections.generalDetails) {
+      payload.category_id = data.category;
+    }
+
+    bulkUpdateMutation.mutate(payload, {
+      onSuccess: () => {
+        if (onBackToProducts) {
+          onBackToProducts();
+        } else {
+          router.push("/product");
+        }
+      },
+      onError: (err: any) => {
+        alert(`Failed to execute bulk update: ${err?.message || "Unknown error"}`);
+      },
+    });
   };
 
   const handleCancel = () => {
@@ -89,24 +113,32 @@ export function BulkEditProductsPage({
               &larr; Back to Products
             </Link>
           </div>
-          <h1 className="text-3xl font-bold font-serif text-[#6E4B42]">Edit Orders</h1>
+          <h1 className="text-3xl font-bold font-serif text-[#6E4B42]">Edit Products</h1>
           <p className="text-sm text-[#8A756C]">
-            Changes you make apply to all these products
+            Changes you make apply to {selectedIds.length} selected product{selectedIds.length === 1 ? "" : "s"}
           </p>
         </div>
 
         {/* Selected Products Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {selectedProducts.map((product) => (
-            <div key={product.id} className="ring-2 ring-[#004956] rounded-2xl">
-              <ProductCard
-                product={product}
-                selectable={false}
-                isSelected={false}
-              />
-            </div>
-          ))}
-        </div>
+        {isLoading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[...Array(4)].map((_, i) => (
+              <ProductCardSkeleton key={i} />
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {displayProducts.map((product) => (
+              <div key={product.id} className="ring-2 ring-[#004956] rounded-2xl">
+                <ProductCard
+                  product={product}
+                  selectable={false}
+                  isSelected={false}
+                />
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Divider */}
@@ -116,6 +148,7 @@ export function BulkEditProductsPage({
       <BulkEditForm
         onSave={handleSave}
         onCancel={handleCancel}
+        isSubmitting={bulkUpdateMutation.isPending}
       />
     </div>
   );

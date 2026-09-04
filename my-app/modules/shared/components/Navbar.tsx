@@ -1,8 +1,9 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { createClient } from "@/utils/supabase/client";
 
 export interface NavItem {
   label: string;
@@ -66,20 +67,11 @@ const navItems: NavItem[] = [
     ),
   },
   {
-    label: "Payment",
-    href: "/payment",
+    label: "Queries",
+    href: "/query",
     icon: (
       <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M3 10h18M7 15h1m4 0h1m-7 4h12a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-      </svg>
-    ),
-  },
-  {
-    label: "Delivery",
-    href: "/delivery",
-    icon: (
-      <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1m-4 0a1 1 0 102 0m-2 0a1 1 0 112 0m6 0a1 1 0 102 0m-2 0a1 1 0 112 0" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
       </svg>
     ),
   },
@@ -96,11 +88,45 @@ export interface NavbarProps {
 }
 
 export function Navbar({
-  user = { name: "AdminName", email: "AdminName@gmail.com" },
+  user: initialUser,
   onLogout,
   className = "",
 }: NavbarProps) {
   const pathname = usePathname();
+  const [adminUser, setAdminUser] = useState<{ name: string; email: string } | null>(initialUser || null);
+
+  useEffect(() => {
+    if (initialUser) {
+      setAdminUser(initialUser);
+      return;
+    }
+
+    async function fetchCurrentAdmin() {
+      try {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const rawName =
+            (user.user_metadata?.full_name as string) ||
+            (user.user_metadata?.name as string) ||
+            (user.email ? user.email.split('@')[0] : 'Admin');
+
+          const formattedName = rawName.charAt(0).toUpperCase() + rawName.slice(1);
+
+          setAdminUser({
+            name: formattedName,
+            email: user.email || 'admin@daystar.com',
+          });
+        }
+      } catch (err) {
+        console.warn('Could not fetch admin user session:', err);
+      }
+    }
+
+    fetchCurrentAdmin();
+  }, [initialUser]);
+
+  const activeUser = adminUser || { name: "Admin", email: "admin@daystar.com" };
 
   const isItemActive = (href: string) => {
     if (href === "/") {
@@ -111,7 +137,7 @@ export function Navbar({
 
   return (
     <aside
-      className={`w-64 h-screen sticky top-0 bg-[#FAF5F2] border-r border-[#EAE1DA] flex flex-col justify-between p-6 select-none shrink-0 overflow-y-auto z-30 ${className}`}
+      className={`w-64 h-screen sticky top-0 bg-[#FAF5F2] border-r border-[#EAE1DA] flex flex-col justify-between p-6 select-none shrink-0 overflow-y-auto z-30 print:hidden ${className}`}
     >
       {/* Top Section */}
       <div className="flex flex-col gap-6">
@@ -157,15 +183,15 @@ export function Navbar({
           <div className="flex items-center gap-3 overflow-hidden">
             {/* Avatar Circle */}
             <div className="w-10 h-10 rounded-full bg-[#DCD4CF] flex items-center justify-center shrink-0 text-[#6E4B42] font-semibold text-sm">
-              {user.name.charAt(0).toUpperCase()}
+              {activeUser.name.charAt(0).toUpperCase()}
             </div>
             {/* User Text */}
             <div className="flex flex-col min-w-0">
               <span className="text-sm font-semibold text-[#6E4B42] truncate leading-tight">
-                {user.name}
+                {activeUser.name}
               </span>
               <span className="text-xs text-[#A08C84] truncate leading-tight mt-0.5">
-                {user.email}
+                {activeUser.email}
               </span>
             </div>
           </div>

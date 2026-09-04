@@ -1,125 +1,107 @@
 "use client";
 
-import React, { useState } from "react";
-import Link from "next/link";
+import React, { useMemo, useCallback, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { PageHeader, OrderFilterBar, Pagination } from "@/modules/shared";
+import { PageHeader, Filter, FilterConfig, Table, Pagination, useDebounce } from "@/modules/shared";
+import { useUrlFilterState } from "@/modules/shared/hooks/useUrlFilterState";
+import { useGetAdminOrders } from "@/app/api/hooks/useOrders";
 import { Order } from "@/types";
+import { ORDER_STATUS_OPTIONS } from "../constants/orderFilters";
+import { orderColumns } from "../utils/orderColumns";
 
-export interface OrderRecord extends Partial<Order> {
-  id: string;
-  customerName: string;
-  customerInitials: string;
-  date: string;
-  status: any;
-  paymentStatus: "Paid" | "Pending" | "Refunded" | "Failed";
-  amount: string;
-}
-
-const sampleOrders: OrderRecord[] = [
-  {
-    id: "#ORD-88210",
-    customerName: "Jane Doe",
-    customerInitials: "JD",
-    date: "2026-07-21",
-    status: "SHIPPED",
-    paymentStatus: "Paid",
-    amount: "$1,240.00",
-  },
-  {
-    id: "#ORD-88209",
-    customerName: "Marcus Smith",
-    customerInitials: "MS",
-    date: "2026-07-20",
-    status: "PROCESSING",
-    paymentStatus: "Paid",
-    amount: "$320.50",
-  },
-  {
-    id: "#ORD-88208",
-    customerName: "Laura Reed",
-    customerInitials: "LR",
-    date: "2026-07-19",
-    status: "PENDING",
-    paymentStatus: "Pending",
-    amount: "$89.00",
-  },
-  {
-    id: "#ORD-88207",
-    customerName: "Chris Kim",
-    customerInitials: "CK",
-    date: "2026-07-18",
-    status: "SHIPPED",
-    paymentStatus: "Paid",
-    amount: "$2,100.99",
-  },
-  {
-    id: "#ORD-88206",
-    customerName: "Sophia Patel",
-    customerInitials: "SP",
-    date: "2026-07-17",
-    status: "DELIVERED",
-    paymentStatus: "Paid",
-    amount: "$540.00",
-  },
-  {
-    id: "#ORD-88205",
-    customerName: "Alexander Wright",
-    customerInitials: "AW",
-    date: "2026-07-16",
-    status: "CANCELLED",
-    paymentStatus: "Refunded",
-    amount: "$150.00",
-  },
+// ── Order filter definitions ──
+const ORDER_FILTERS = [
+  { key: "status", defaultValue: "All Statuses" },
+  { key: "search", defaultValue: "" },
 ];
+
+const ITEMS_PER_PAGE = 10;
+const extractOrderKey = (order: Order) => order.id;
 
 export function OrderPage() {
   const router = useRouter();
-  const [statusFilter, setStatusFilter] = useState("All Statuses");
-  const [dateFilter, setDateFilter] = useState("");
-  const [paymentFilter, setPaymentFilter] = useState("Payment: All");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
 
-  const itemsPerPage = 5;
-  const totalItems = 1248;
-  const totalPages = 250;
-
-  const filteredOrders = sampleOrders.filter((order) => {
-    if (statusFilter !== "All Statuses" && order.status !== statusFilter) {
-      return false;
-    }
-    if (paymentFilter !== "Payment: All" && order.paymentStatus !== paymentFilter) {
-      return false;
-    }
-    if (dateFilter && order.date !== dateFilter) {
-      return false;
-    }
-    if (
-      searchQuery &&
-      !order.id.toLowerCase().includes(searchQuery.toLowerCase()) &&
-      !order.customerName.toLowerCase().includes(searchQuery.toLowerCase())
-    ) {
-      return false;
-    }
-    return true;
+  // ── URL-synced filter state (reusable) ──
+  const {
+    filterValues,
+    setFilter,
+    currentPage,
+  } = useUrlFilterState({
+    filters: ORDER_FILTERS,
+    itemsPerPage: ITEMS_PER_PAGE,
   });
 
-  const getStatusBadge = (status: OrderRecord["status"]) => {
-    switch (status) {
-      case "SHIPPED":
-      case "DELIVERED":
-        return "bg-[#80F2C5] text-[#085C3A]";
-      case "PROCESSING":
-        return "bg-[#D6E2FF] text-[#2546A3]";
-      case "PENDING":
-        return "bg-[#FFE0E0] text-[#A62424]";
-      case "CANCELLED":
-        return "bg-[#E2E8F0] text-[#475569]";
-      default:
-        return "bg-stone-100 text-stone-700";
+  const statusFilter = filterValues.status;
+
+  // ── Debounced Local Search ──
+  const [localSearch, setLocalSearch] = useState(filterValues.search || "");
+  const debouncedSearch = useDebounce(localSearch, 350);
+
+  useEffect(() => {
+    if (debouncedSearch !== (filterValues.search || "")) {
+      setFilter("search", debouncedSearch);
+      setFilter("page", 1);
     }
-  };
+  }, [debouncedSearch, filterValues.search, setFilter]);
+
+  // ── Fetch orders from API (server-side filtering + pagination) ──
+  const { data: response, isLoading, isError, error, refetch } = useGetAdminOrders({
+    page: currentPage,
+    limit: ITEMS_PER_PAGE,
+    ...(statusFilter !== "All Statuses" ? { status: statusFilter.toLowerCase() } : {}),
+    ...(debouncedSearch ? { search: debouncedSearch } : {}),
+  });
+
+  // ── Memoized derived values ──
+  const orders = useMemo(() => response?.items || [], [response]);
+  const totalItems = useMemo(() => response?.total || 0, [response]);
+  const totalPages = useMemo(() => Math.max(1, Math.ceil(totalItems / ITEMS_PER_PAGE)), [totalItems]);
+
+  // Clamp current page if totalItems > 0 and currentPage > totalPages
+  useEffect(() => {
+    if (totalItems > 0 && currentPage > totalPages) {
+      setFilter("page", 1);
+    }
+  }, [currentPage, totalPages, totalItems, setFilter]);
+
+  const errorMessage = useMemo(() => {
+    if (!error) return "Network error or request timeout.";
+    if (typeof error === "object" && "message" in error && typeof (error as { message: unknown }).message === "string") {
+      return (error as { message: string }).message;
+    }
+    return "Network error or request timeout.";
+  }, [error]);
+
+  // ── Filter config ──
+  const orderConfig: FilterConfig[] = useMemo(() => [
+    {
+      key: "status",
+      type: "select",
+      value: statusFilter,
+      onChange: (val: string) => {
+        setFilter("status", val);
+        setFilter("page", 1);
+      },
+      options: ORDER_STATUS_OPTIONS,
+    },
+    {
+      key: "search",
+      type: "search",
+      value: localSearch,
+      onChange: (val: string) => setLocalSearch(val),
+      placeholder: "Search by order #, name or phone...",
+    },
+  ], [statusFilter, localSearch, setFilter]);
+
+  const handleRowClick = useCallback(
+    (order: Order) => router.push(`/order/${order.id}`),
+    [router]
+  );
+
+  const handlePageChange = useCallback(
+    (page: number) => setFilter("page", page),
+    [setFilter]
+  );
 
   return (
     <div className="flex flex-col gap-6">
@@ -128,113 +110,54 @@ export function OrderPage() {
         subtitle="Monitor customer transactions, order status, and payment history."
       />
 
-      {/* Filter Bar Component */}
-      <OrderFilterBar
-        status={statusFilter}
-        onStatusChange={setStatusFilter}
-        date={dateFilter}
-        onDateChange={setDateFilter}
-        payment={paymentFilter}
-        onPaymentChange={setPaymentFilter}
-        search={searchQuery}
-        onSearchChange={setSearchQuery}
-      />
+      {/* Filter Component */}
+      <Filter config={orderConfig} />
 
-      {/* Orders Table Container */}
-      <div className="bg-white rounded-2xl border border-[#E9E3DE] shadow-xs overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-[#FAF5F2] border-b border-[#E9E3DE]">
-                <th className="px-6 py-3.5 text-xs font-bold text-[#6E5B53] uppercase tracking-wider">
-                  Order ID
-                </th>
-                <th className="px-6 py-3.5 text-xs font-bold text-[#6E5B53] uppercase tracking-wider">
-                  Customer
-                </th>
-                <th className="px-6 py-3.5 text-xs font-bold text-[#6E5B53] uppercase tracking-wider">
-                  Date
-                </th>
-                <th className="px-6 py-3.5 text-xs font-bold text-[#6E5B53] uppercase tracking-wider">
-                  Payment
-                </th>
-                <th className="px-6 py-3.5 text-xs font-bold text-[#6E5B53] uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3.5 text-xs font-bold text-[#6E5B53] uppercase tracking-wider">
-                  Amount
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#F0E8E3]">
-              {filteredOrders.length > 0 ? (
-                filteredOrders.map((order) => {
-                  const cleanId = order.id.replace("#", "");
-                  return (
-                    <tr
-                      key={order.id}
-                      onClick={() => router.push(`/order/${cleanId}`)}
-                      className="hover:bg-[#FAF6F4] transition-colors cursor-pointer"
-                    >
-                      <td className="px-6 py-4 text-sm font-medium text-[#3D2E28] whitespace-nowrap">
-                        <Link
-                          href={`/order/${cleanId}`}
-                          onClick={(e) => e.stopPropagation()}
-                          className="text-[#6E4B42] font-semibold hover:underline"
-                        >
-                          {order.id}
-                        </Link>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-[#3D2E28] whitespace-nowrap">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-[#E4EBF9] text-[#30457A] font-bold text-xs flex items-center justify-center shrink-0">
-                            {order.customerInitials}
-                          </div>
-                          <span className="font-medium">{order.customerName}</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-[#8A756C] whitespace-nowrap">
-                        {order.date}
-                      </td>
-                      <td className="px-6 py-4 text-sm font-medium text-[#4A3831] whitespace-nowrap">
-                        {order.paymentStatus}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span
-                          className={`inline-block text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-wider ${getStatusBadge(
-                            order.status
-                          )}`}
-                        >
-                          {order.status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-sm font-semibold text-[#3D2E28] whitespace-nowrap">
-                        {order.amount}
-                      </td>
-                    </tr>
-                  );
-                })
-              ) : (
-                <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-sm text-[#8A756C]">
-                    No orders match your filter criteria.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+      {/* Error state */}
+      {isError && (
+        <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl flex items-center justify-between gap-4 shadow-xs">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center shrink-0 text-red-600 font-bold text-sm">
+              !
+            </div>
+            <div>
+              <p className="font-semibold text-sm">Could not load orders from backend</p>
+              <p className="text-xs text-red-600 mt-0.5">{errorMessage}</p>
+            </div>
+          </div>
+          <button
+            onClick={() => refetch()}
+            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-semibold rounded-xl transition-colors shrink-0 shadow-xs cursor-pointer"
+          >
+            Try Again
+          </button>
         </div>
+      )}
 
-        {/* Pagination Component */}
-        <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          totalItems={totalItems}
-          itemsPerPage={itemsPerPage}
-          onPageChange={setCurrentPage}
-          itemLabel="orders"
-        />
-      </div>
+      {/* Table + Pagination */}
+      {!isError && (
+        <div className="space-y-0">
+          <Table
+            data={orders}
+            columns={orderColumns}
+            isLoading={isLoading}
+            keyExtractor={extractOrderKey}
+            onRowClick={handleRowClick}
+            emptyText="No orders match your filter criteria."
+          />
+
+          {!isLoading && totalItems > 0 && (
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={totalItems}
+              itemsPerPage={ITEMS_PER_PAGE}
+              onPageChange={handlePageChange}
+              itemLabel="orders"
+            />
+          )}
+        </div>
+      )}
     </div>
   );
 }

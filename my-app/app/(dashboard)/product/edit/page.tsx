@@ -1,6 +1,10 @@
-import React from "react";
-import { BulkEditProductsPage } from "@/modules/product/pages/BulkEditProductsPage";
+﻿import { Suspense } from "react";
+import { BulkEditProductsPage } from "@/modules/product/index";
 
-export default function BulkEditRoute() {
-  return <BulkEditProductsPage />;
+export default function EditProductRoute() {
+  return (
+    <Suspense>
+      <BulkEditProductsPage />
+    </Suspense>
+  );
 }
