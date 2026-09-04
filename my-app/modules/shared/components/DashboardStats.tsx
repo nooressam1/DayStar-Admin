@@ -52,8 +52,6 @@ export function DashboardStats({
   lowStockData = {
     title: "LOW STOCK",
     value: "24 Items",
-    linkText: "Review Inventory",
-    linkHref: "/inventory",
   },
   newCustomersData = {
     title: "NEW CUSTOMERS",
@@ -102,10 +100,7 @@ export function DashboardStats({
       <StatCard
         title={lowStockData.title || "LOW STOCK"}
         value={lowStockData.value}
-        actionLink={{
-          text: lowStockData.linkText || "Review Inventory",
-          href: lowStockData.linkHref || "/inventory",
-        }}
+
       />
 
       {/* New Customers */}

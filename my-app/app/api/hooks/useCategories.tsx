@@ -28,6 +28,7 @@ export const useUpdateCategory = () => {
       categoryApi.updateCategory(id, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["categories"] });
+      queryClient.invalidateQueries({ queryKey: ["products"] });
     },
   });
 };
@@ -39,6 +40,7 @@ export const useDeleteCategory = () => {
     mutationFn: (id: string) => categoryApi.deleteCategory(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["categories"] });
+      queryClient.invalidateQueries({ queryKey: ["products"] });
     },
   });
 };

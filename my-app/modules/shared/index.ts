@@ -85,6 +85,8 @@ export type { OptionCardProps } from "./components/OptionCard";
 
 export * from "@/types";
 
+export { useMediaUpload } from "./hooks/useMediaUpload";
+export type { UseMediaUploadOptions } from "./hooks/useMediaUpload";
 export { useUrlFilterState } from "./hooks/useUrlFilterState";
 export type {
   UseUrlFilterStateOptions,

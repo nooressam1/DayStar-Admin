@@ -97,12 +97,13 @@ export function AddCategoryPage() {
           <MediaUpload
             layout="compact"
             label="Category Photo"
+            bucketName="categories"
             value={state.photo}
             onChange={(val) => {
               setField("photo", val);
               if (errors.photo) setErrors((prev) => ({ ...prev, photo: undefined }));
             }}
-            helperText="JPG, PNG or WEBP image URL."
+            helperText="JPG, PNG or WEBP image."
           />
           {errors.photo && (
             <p className="text-xs text-red-600 font-semibold mt-1">{errors.photo}</p>

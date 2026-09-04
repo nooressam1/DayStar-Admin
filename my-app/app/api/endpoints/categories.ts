@@ -8,7 +8,7 @@ export class categoryApi {
     try {
       const res = await apiClient.request<any>(
         ENDPOINTS.CATEGORY.LIST,
-        serializeQueryParams(params)
+        serializeQueryParams({ ...params, all: true })
       );
 
       let items: Category[] = [];

@@ -1,8 +1,9 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { createClient } from "@/utils/supabase/client";
 
 export interface NavItem {
   label: string;
@@ -87,11 +88,45 @@ export interface NavbarProps {
 }
 
 export function Navbar({
-  user = { name: "AdminName", email: "AdminName@gmail.com" },
+  user: initialUser,
   onLogout,
   className = "",
 }: NavbarProps) {
   const pathname = usePathname();
+  const [adminUser, setAdminUser] = useState<{ name: string; email: string } | null>(initialUser || null);
+
+  useEffect(() => {
+    if (initialUser) {
+      setAdminUser(initialUser);
+      return;
+    }
+
+    async function fetchCurrentAdmin() {
+      try {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const rawName =
+            (user.user_metadata?.full_name as string) ||
+            (user.user_metadata?.name as string) ||
+            (user.email ? user.email.split('@')[0] : 'Admin');
+
+          const formattedName = rawName.charAt(0).toUpperCase() + rawName.slice(1);
+
+          setAdminUser({
+            name: formattedName,
+            email: user.email || 'admin@daystar.com',
+          });
+        }
+      } catch (err) {
+        console.warn('Could not fetch admin user session:', err);
+      }
+    }
+
+    fetchCurrentAdmin();
+  }, [initialUser]);
+
+  const activeUser = adminUser || { name: "Admin", email: "admin@daystar.com" };
 
   const isItemActive = (href: string) => {
     if (href === "/") {
@@ -148,15 +183,15 @@ export function Navbar({
           <div className="flex items-center gap-3 overflow-hidden">
             {/* Avatar Circle */}
             <div className="w-10 h-10 rounded-full bg-[#DCD4CF] flex items-center justify-center shrink-0 text-[#6E4B42] font-semibold text-sm">
-              {user.name.charAt(0).toUpperCase()}
+              {activeUser.name.charAt(0).toUpperCase()}
             </div>
             {/* User Text */}
             <div className="flex flex-col min-w-0">
               <span className="text-sm font-semibold text-[#6E4B42] truncate leading-tight">
-                {user.name}
+                {activeUser.name}
               </span>
               <span className="text-xs text-[#A08C84] truncate leading-tight mt-0.5">
-                {user.email}
+                {activeUser.email}
               </span>
             </div>
           </div>

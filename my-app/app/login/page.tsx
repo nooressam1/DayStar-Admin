@@ -42,12 +42,12 @@ function LoginForm() {
       {/* Card */}
       <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
         {/* Header accent */}
-        <div className="h-2 bg-gradient-to-r from-[#8B6F4E] to-[#C4A882]" />
+        <div className="h-2 bg-gradient-to-r from-[#78534a] to-[#78534a]/90" />
 
         <div className="p-8">
           {/* Logo / Title */}
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-[#8B6F4E] tracking-tight">
+            <h1 className="text-3xl font-bold text-[#78534a] tracking-tight">
               DayStar
             </h1>
             <p className="text-sm text-gray-500 mt-1">Admin Dashboard</p>
@@ -101,7 +101,7 @@ function LoginForm() {
             <button
               type="submit"
               disabled={loading}
-              className="mt-2 bg-[#8B6F4E] hover:bg-[#7A6145] text-white rounded-lg py-2.5 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              className="mt-2 bg-[#78534a] hover:bg-[#78534a]/90 text-white rounded-lg py-2.5 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
               {loading ? (
                 <span className="flex items-center justify-center gap-2">

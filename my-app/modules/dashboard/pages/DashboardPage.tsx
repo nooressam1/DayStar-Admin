@@ -60,8 +60,6 @@ export function DashboardPage() {
     return {
       title: "LOW STOCK",
       value: `${inactiveOrLowCount} Items`,
-      linkText: "Review Inventory",
-      linkHref: "/inventory",
     };
   }, [productsResponse]);
 
